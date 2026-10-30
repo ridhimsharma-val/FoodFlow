@@ -141,6 +141,19 @@ class SurplusBatch {
       status != BatchStatus.expired &&
       status != BatchStatus.cancelled;
 
+  /// Whether a volunteer has explicitly accepted this delivery task and active live tracking is eligible.
+  /// Strictly requires a valid assigned volunteer/courier ID and a post-acceptance lifecycle status.
+  /// Neither 'claimed' nor 'volunteerAssigning' satisfy this condition.
+  bool get isVolunteerAcceptedAndActive {
+    final hasVolunteerId = assignedCourierId != null && assignedCourierId!.trim().isNotEmpty;
+    final isPostAcceptanceStatus = status == BatchStatus.inTransitToPickup ||
+        status == BatchStatus.arrivedAtPickup ||
+        status == BatchStatus.pickedUp ||
+        status == BatchStatus.inTransit ||
+        status == BatchStatus.arrivedAtReceiver;
+    return hasVolunteerId && isPostAcceptanceStatus;
+  }
+
   bool get isPickedUp =>
       status == BatchStatus.pickedUp ||
       status == BatchStatus.inTransit ||
@@ -426,16 +439,12 @@ class FoodRescueService extends ChangeNotifier {
           b.status == BatchStatus.inTransit ||
           b.status == BatchStatus.arrivedAtReceiver).toList();
 
-  /// Find active rescue for Provider (status is claimed, assigning, en route, picked up, or in transit)
+  /// Find active rescue for Provider (tracking popup eligible: volunteer explicitly accepted and in post-acceptance stage)
   SurplusBatch? getActiveRescueForProvider(String providerName, {String? providerId}) {
     final cleanProvider = providerName.trim().toLowerCase();
     final currentUserId = providerId ?? SupabaseService.currentUser?.id;
 
-    final activeList = _batches.where((b) =>
-        b.status != BatchStatus.available &&
-        b.status != BatchStatus.delivered &&
-        b.status != BatchStatus.expired &&
-        b.status != BatchStatus.cancelled).toList();
+    final activeList = _batches.where((b) => b.isVolunteerAcceptedAndActive).toList();
 
     if (activeList.isEmpty) return null;
 
@@ -468,16 +477,12 @@ class FoodRescueService extends ChangeNotifier {
     return null;
   }
 
-  /// Find active rescue for Receiver (status is claimed, assigning, en route, picked up, or in transit)
+  /// Find active rescue for Receiver (tracking popup eligible: volunteer explicitly accepted and in post-acceptance stage)
   SurplusBatch? getActiveRescueForReceiver(String receiverOrg, {String? receiverId}) {
     final cleanOrg = receiverOrg.trim().toLowerCase();
     final currentUserId = receiverId ?? SupabaseService.currentUser?.id;
 
-    final activeList = _batches.where((b) =>
-        b.status != BatchStatus.available &&
-        b.status != BatchStatus.delivered &&
-        b.status != BatchStatus.expired &&
-        b.status != BatchStatus.cancelled).toList();
+    final activeList = _batches.where((b) => b.isVolunteerAcceptedAndActive).toList();
 
     if (activeList.isEmpty) return null;
 
@@ -1096,21 +1101,42 @@ class FoodRescueService extends ChangeNotifier {
     }
   }
 
-  /// Accept a delivery task (routes through startVolunteerAssignment)
+  /// Accept a delivery task (explicit volunteer acceptance transitions to inTransitToPickup)
   bool acceptDeliveryTask({
     required String batchId,
     required String volunteerId,
     required String volunteerName,
     String? volunteerPhone,
-    bool delayFinalize = true,
+    bool delayFinalize = false,
   }) {
-    return startVolunteerAssignment(
+    final started = startVolunteerAssignment(
       batchId: batchId,
       volunteerId: volunteerId,
       volunteerName: volunteerName,
       volunteerPhone: volunteerPhone,
-      autoFinalize: delayFinalize,
+      autoFinalize: false,
     );
+    if (!started) return false;
+
+    if (delayFinalize) {
+      bool isTest = false;
+      try {
+        isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+      } catch (_) {
+        isTest = true;
+      }
+      if (isTest) {
+        finalizeVolunteerAssignment(batchId);
+      } else {
+        Timer(const Duration(milliseconds: 2500), () {
+          finalizeVolunteerAssignment(batchId);
+        });
+      }
+    } else {
+      finalizeVolunteerAssignment(batchId);
+    }
+
+    return true;
   }
 
   /// Start simulated movement along the route
@@ -1309,6 +1335,18 @@ class FoodRescueService extends ChangeNotifier {
       'assigned_courier_phone': null,
       'status': BatchStatus.claimed.name,
     });
+  }
+
+  /// Reset batches and simulation timers (for unit/widget test isolation)
+  void resetForTesting() {
+    _batches.clear();
+    _simulationProgress.clear();
+    _simulationSpeeds.clear();
+    _simulationPaused.clear();
+    for (final timer in _simulationTimers.values) {
+      timer.cancel();
+    }
+    _simulationTimers.clear();
   }
 
   @override

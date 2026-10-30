@@ -12,6 +12,7 @@ void main() {
 
     setUp(() {
       service = FoodRescueService.instance;
+      service.resetForTesting();
     });
 
     test('One shared batch update notifies both Provider and Receiver in FoodRescueService', () {
@@ -42,6 +43,10 @@ void main() {
       expect(claimed, isTrue);
       expect(batch.status, equals(BatchStatus.claimed));
 
+      // At Step 1 (claimed, waiting for volunteer): tracking popup is NOT visible for either role
+      expect(service.getActiveRescueForProvider('Grand Hyatt Kitchen'), isNull);
+      expect(service.getActiveRescueForReceiver('Care & Share NGO'), isNull);
+
       // 3. Volunteer accepts pickup
       final accepted = service.acceptDeliveryTask(
         batchId: batch.id,
@@ -52,7 +57,7 @@ void main() {
       );
       expect(accepted, isTrue);
       expect(batch.assignedCourierName, equals('Deepak Patel'));
-      expect(batch.status, isIn([BatchStatus.volunteerAssigning, BatchStatus.inTransitToPickup]));
+      expect(batch.status, equals(BatchStatus.inTransitToPickup));
 
       // 4. Verification: Both Provider and Receiver find this ONE shared rescue record
       final providerRescue = service.getActiveRescueForProvider('Grand Hyatt Kitchen');
@@ -96,6 +101,7 @@ void main() {
         volunteerPhone: '+91 97777 55555',
         autoFinalize: false,
       );
+      service.finalizeVolunteerAssignment(batch.id);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -151,6 +157,7 @@ void main() {
         volunteerPhone: '+91 98888 77777',
         autoFinalize: false,
       );
+      service.finalizeVolunteerAssignment(batch.id);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -201,6 +208,7 @@ void main() {
         volunteerName: 'Suraj Singh',
         autoFinalize: false,
       );
+      service.finalizeVolunteerAssignment(batch.id);
 
       await tester.pumpWidget(
         const MaterialApp(
@@ -239,6 +247,7 @@ void main() {
         volunteerName: 'Kunal Roy',
         autoFinalize: false,
       );
+      service.finalizeVolunteerAssignment(batch.id);
 
       await tester.pumpWidget(
         const MaterialApp(
@@ -277,6 +286,7 @@ void main() {
         volunteerName: 'Aakash Verma',
         autoFinalize: false,
       );
+      service.finalizeVolunteerAssignment(batch.id);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -300,6 +310,176 @@ void main() {
 
       // Popup is cleanly dismissed
       expect(find.text('LIVE RESCUE ACTIVE'), findsNothing);
+    });
+
+    testWidgets('Complete lifecycle test: Popup hidden on claim and assigning, visible only after volunteer acceptance', (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // STEP 1 — PROVIDER LISTS FOOD
+      final batch = service.listNewBatch(
+        providerName: 'Royal Spice Kitchen',
+        providerCategory: 'Restaurant',
+        title: '45 Portions Paneer Butter Masala',
+        category: 'Cooked Meals & Thalis',
+        quantityPortions: 45,
+        dietaryType: 'Pure Veg',
+        temperatureCelsius: 64.0,
+        packagingType: 'Foil Boxes',
+        pickupAddress: 'Indiranagar 100ft Road',
+        location: const LatLng(12.9716, 77.6412),
+      );
+      expect(batch.status, equals(BatchStatus.available));
+      expect(batch.isVolunteerAcceptedAndActive, isFalse);
+
+      // STEP 2 — RECEIVER CLAIMS FOOD
+      final claimed = service.claimBatch(
+        batchId: batch.id,
+        ngoName: 'Compassion Shelter NGO',
+      );
+      expect(claimed, isTrue);
+      expect(batch.status, equals(BatchStatus.claimed));
+      expect(batch.assignedCourierId, isNull);
+      expect(batch.isVolunteerAcceptedAndActive, isFalse);
+
+      // Verify Provider & Receiver active rescue lookup returns null
+      expect(service.getActiveRescueForProvider('Royal Spice Kitchen'), isNull);
+      expect(service.getActiveRescueForReceiver('Compassion Shelter NGO'), isNull);
+
+      // Verify Provider Dashboard does NOT render tracking popup
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ProviderDashboard(),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('LIVE RESCUE ACTIVE'), findsNothing);
+      expect(find.text('Track Live Delivery / Open Rescue'), findsNothing);
+
+      // Verify Receiver Dashboard does NOT render tracking popup
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ReceiverDashboard(),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('DELIVERY IN PROGRESS'), findsNothing);
+      expect(find.text('Track Delivery'), findsNothing);
+
+      // STEP 3 — WAITING FOR VOLUNTEER (volunteerAssigning stage)
+      service.startVolunteerAssignment(
+        batchId: batch.id,
+        volunteerId: 'VOL-PENDING-1',
+        volunteerName: 'Ajay Verma',
+        autoFinalize: false,
+      );
+      expect(batch.status, equals(BatchStatus.volunteerAssigning));
+      expect(batch.isVolunteerAcceptedAndActive, isFalse);
+
+      // Neither Provider nor Receiver sees tracking popup during volunteerAssigning stage
+      expect(service.getActiveRescueForProvider('Royal Spice Kitchen'), isNull);
+      expect(service.getActiveRescueForReceiver('Compassion Shelter NGO'), isNull);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ProviderDashboard(),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('LIVE RESCUE ACTIVE'), findsNothing);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ReceiverDashboard(),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('DELIVERY IN PROGRESS'), findsNothing);
+
+      // STEP 4 — VOLUNTEER EXPLICITLY ACCEPTS PICKUP
+      service.finalizeVolunteerAssignment(batch.id);
+      expect(batch.status, equals(BatchStatus.inTransitToPickup));
+      expect(batch.assignedCourierId, isNotNull);
+      expect(batch.isVolunteerAcceptedAndActive, isTrue);
+
+      // Now Provider Dashboard renders the active tracking popup!
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ProviderDashboard(),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('LIVE RESCUE ACTIVE'), findsOneWidget);
+      expect(find.text('PIN: ${batch.pickupOtp}'), findsOneWidget);
+      expect(find.text('Track Live Delivery / Open Rescue'), findsOneWidget);
+
+      // Receiver Dashboard also renders the active tracking popup!
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ReceiverDashboard(),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('DELIVERY IN PROGRESS'), findsOneWidget);
+      expect(find.text('OTP: ${batch.deliveryOtp}'), findsOneWidget);
+      expect(find.text('Track Delivery'), findsOneWidget);
+    });
+
+    test('Refresh / Reconnection simulation restores popup eligibility only when volunteer is assigned', () {
+      // 1. Claimed batch without volunteer: not eligible
+      final unassignedJson = {
+        'id': 'BATCH-REFRESH-1',
+        'provider_name': 'Green Curry',
+        'provider_category': 'Kitchen',
+        'pickup_latitude': 12.97,
+        'pickup_longitude': 77.64,
+        'title': '30 Meals',
+        'category': 'Meals',
+        'quantity_portions': 30,
+        'dietary_type': 'Veg',
+        'status': 'claimed',
+        'claimed_by_ngo_name': 'Hope NGO',
+        'assigned_courier_id': null,
+      };
+      final unassignedBatch = SurplusBatch.fromJson(unassignedJson);
+      expect(unassignedBatch.isVolunteerAcceptedAndActive, isFalse);
+
+      // 2. Assigning stage: not eligible
+      final assigningJson = {
+        'id': 'BATCH-REFRESH-2',
+        'provider_name': 'Green Curry',
+        'provider_category': 'Kitchen',
+        'pickup_latitude': 12.97,
+        'pickup_longitude': 77.64,
+        'title': '30 Meals',
+        'category': 'Meals',
+        'quantity_portions': 30,
+        'dietary_type': 'Veg',
+        'status': 'volunteerAssigning',
+        'claimed_by_ngo_name': 'Hope NGO',
+        'assigned_courier_id': 'VOL-99',
+      };
+      final assigningBatch = SurplusBatch.fromJson(assigningJson);
+      expect(assigningBatch.isVolunteerAcceptedAndActive, isFalse);
+
+      // 3. Post-acceptance stage with valid volunteer ID: eligible!
+      final acceptedJson = {
+        'id': 'BATCH-REFRESH-3',
+        'provider_name': 'Green Curry',
+        'provider_category': 'Kitchen',
+        'pickup_latitude': 12.97,
+        'pickup_longitude': 77.64,
+        'title': '30 Meals',
+        'category': 'Meals',
+        'quantity_portions': 30,
+        'dietary_type': 'Veg',
+        'status': 'inTransitToPickup',
+        'claimed_by_ngo_name': 'Hope NGO',
+        'assigned_courier_id': 'VOL-99',
+      };
+      final acceptedBatch = SurplusBatch.fromJson(acceptedJson);
+      expect(acceptedBatch.isVolunteerAcceptedAndActive, isTrue);
     });
   });
 }

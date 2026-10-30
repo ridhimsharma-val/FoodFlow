@@ -492,11 +492,7 @@ class _LiveClaimPageState extends State<LiveClaimPage> {
 
                     _buildTimeline(currentStep),
 
-                    if (liveBatch.assignedCourierId != null ||
-                        liveBatch.status == BatchStatus.inTransitToPickup ||
-                        liveBatch.status == BatchStatus.arrivedAtPickup ||
-                        liveBatch.status == BatchStatus.pickedUp ||
-                        liveBatch.status == BatchStatus.inTransit) ...[
+                    if (liveBatch.isVolunteerAcceptedAndActive) ...[
                       const SizedBox(height: 24),
                       Container(
                         padding: const EdgeInsets.all(16),

@@ -82,7 +82,9 @@ class _ActiveRescueBottomPopupState extends State<ActiveRescueBottomPopup>
       listenable: FoodRescueService.instance,
       builder: (context, _) {
         final batch = _findActiveBatch();
-        if (batch == null) {
+        // Exact visibility check: popup only appears when a volunteer has explicitly accepted
+        // and the rescue has progressed to a post-acceptance stage (inTransitToPickup, etc.)
+        if (batch == null || !batch.isVolunteerAcceptedAndActive) {
           _lastBatchId = null;
           _isDismissed = false;
           return const SizedBox.shrink();

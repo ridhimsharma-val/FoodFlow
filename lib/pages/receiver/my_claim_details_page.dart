@@ -402,8 +402,8 @@ class _MyClaimDetailsPageState extends State<MyClaimDetailsPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // Track Delivery Button (when volunteer assigned or en route)
-                if (liveBatch.assignedCourierId != null || isConfirmed) ...[
+                // Track Delivery Button (only when volunteer has explicitly accepted)
+                if (liveBatch.isVolunteerAcceptedAndActive) ...[
                   SizedBox(
                     width: double.infinity,
                     height: 48,

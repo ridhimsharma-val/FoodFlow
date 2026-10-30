@@ -142,7 +142,7 @@ class _VolunteerAcceptTaskDialogState extends State<VolunteerAcceptTaskDialog> {
         if (!rpcSucceeded) {
           try {
             await SupabaseService.client.from('surplus_batches').update({
-              'status': BatchStatus.volunteerAssigning.name,
+              'status': BatchStatus.inTransitToPickup.name,
               'assigned_courier_name': volunteerName,
               'assigned_courier_phone': volunteerPhone,
               'courier_eta_minutes': 12,
@@ -171,6 +171,7 @@ class _VolunteerAcceptTaskDialogState extends State<VolunteerAcceptTaskDialog> {
         if (!isTest) {
           _autoTransitionTimer = Timer(const Duration(milliseconds: 1800), () {
             if (mounted && _isAccepted) {
+              FoodRescueService.instance.finalizeVolunteerAssignment(widget.batch.id);
               final nav = Navigator.of(context, rootNavigator: true);
               nav.pop();
               SharedRescueTrackingPage.open(
@@ -286,6 +287,7 @@ class _VolunteerAcceptTaskDialogState extends State<VolunteerAcceptTaskDialog> {
               child: ElevatedButton.icon(
                 onPressed: () {
                   _autoTransitionTimer?.cancel();
+                  FoodRescueService.instance.finalizeVolunteerAssignment(widget.batch.id);
                   final nav = Navigator.of(context, rootNavigator: true);
                   nav.pop();
                   SharedRescueTrackingPage.open(
