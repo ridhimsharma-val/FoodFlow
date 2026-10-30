@@ -91,7 +91,7 @@ class RoleItem {
     required this.role,
     required this.title,
     required this.description,
-    required this.badges,
+    this.badges = const [],
   });
 }
 
@@ -249,24 +249,24 @@ class FoodFlowLogoBox extends StatelessWidget {
   }
 }
 
-/// Left side branding & Platform Features Section
+/// Left side branding section
 class BrandHeaderSection extends StatelessWidget {
   const BrandHeaderSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // App Logo
-        const Center(
-          child: FoodFlowLogoBox(),
-        ),
-        const SizedBox(height: 20),
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: const [
+          // App Logo
+          FoodFlowLogoBox(),
+          SizedBox(height: 20),
 
-        // Brand Title
-        const Center(
-          child: Text(
+          // Brand Title
+          Text(
             'Food Flow',
             style: TextStyle(
               fontSize: 26,
@@ -275,12 +275,10 @@ class BrandHeaderSection extends StatelessWidget {
               letterSpacing: -0.5,
             ),
           ),
-        ),
-        const SizedBox(height: 6),
+          SizedBox(height: 8),
 
-        // Subtitle
-        const Center(
-          child: Text(
+          // Tagline
+          Text(
             'Surplus Food Rescue & Logistics Redistribution Platform',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -290,132 +288,8 @@ class BrandHeaderSection extends StatelessWidget {
               height: 1.35,
             ),
           ),
-        ),
-        const SizedBox(height: 36),
-
-        // Features Card
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.borderSubtle,
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Features Card Header
-              const Text(
-                'FEATURES OF PLATFORM',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textGoldKicker,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Feature 1: Real-Time Dispatch
-              _buildFeatureItem(
-                icon: Icons.access_time_rounded,
-                title: 'Real-Time Dispatch: ',
-                description:
-                    'Instant matchmaking of surplus food with nearby recipients and pickup support.',
-              ),
-              const SizedBox(height: 12),
-
-              // Feature 2: Verified Partners
-              _buildFeatureItem(
-                icon: Icons.verified_user_outlined,
-                title: 'Verified Partners: ',
-                description:
-                    'Verification checks for donors, NGOs, shelters and participating volunteers.',
-              ),
-              const SizedBox(height: 12),
-
-              // Feature 3: Transparent Tracking
-              _buildFeatureItem(
-                icon: Icons.alt_route_rounded,
-                title: 'Transparent Tracking: ',
-                description:
-                    'Track the rescue journey from food listing to pickup and final delivery.',
-              ),
-              const SizedBox(height: 12),
-
-              // Feature 4: Smart Location Matching
-              _buildFeatureItem(
-                icon: Icons.location_on_outlined,
-                title: 'Smart Location Matching: ',
-                description:
-                    'Match available food with suitable nearby recipients using location, food type and urgency.',
-              ),
-              const SizedBox(height: 12),
-
-              // Feature 5: Impact Tracking
-              _buildFeatureItem(
-                icon: Icons.eco_outlined,
-                title: 'Impact Tracking: ',
-                description:
-                    'Measure meals rescued, food saved, people served and successful redistributions.',
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFeatureItem({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: const EdgeInsets.only(top: 2),
-          padding: const EdgeInsets.all(2),
-          child: Icon(
-            icon,
-            size: 17,
-            color: const Color(0xFFC79213),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: const TextStyle(
-                fontSize: 12.5,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-              children: [
-                TextSpan(
-                  text: title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                TextSpan(text: description),
-              ],
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -555,38 +429,14 @@ class RoleCardWidget extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title + Badges Row
-                  Row(
-                    children: [
-                      Text(
-                        data.title,
-                        style: const TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          alignment: WrapAlignment.spaceBetween,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Wrap(
-                              spacing: 6,
-                              children: data.badges
-                                  .take(data.badges.length > 1 ? 1 : 0)
-                                  .map((b) => _buildBadge(b))
-                                  .toList(),
-                            ),
-                            if (data.badges.isNotEmpty)
-                              _buildBadge(data.badges.last),
-                          ],
-                        ),
-                      ),
-                    ],
+                  // Title
+                  Text(
+                    data.title,
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 6),
 
@@ -633,24 +483,6 @@ class RoleCardWidget extends StatelessWidget {
           : null,
     );
   }
-
-  Widget _buildBadge(RoleBadge badge) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-      decoration: BoxDecoration(
-        color: badge.backgroundColor,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        badge.text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: badge.textColor,
-        ),
-      ),
-    );
-  }
 }
 
 // ============================================================================
@@ -695,44 +527,18 @@ class _LoginPageState extends State<LoginPage> {
       title: '1. Provider',
       description:
           'Hostels, Caterers, Restaurants/Hotels dispatching surplus culinary batches directly.',
-      badges: [
-        RoleBadge(
-          text: 'Main',
-          backgroundColor: AppColors.greenBadgeBg,
-          textColor: AppColors.greenBadgeText,
-        ),
-        RoleBadge(
-          text: 'Supply Side',
-          backgroundColor: AppColors.peachBadgeBg,
-          textColor: AppColors.peachBadgeText,
-        ),
-      ],
     ),
     RoleItem(
       role: UserRole.receiver,
       title: '2. Receiver',
       description:
           'NGOs, Shelters, and Personal Donations handling vetted distribution to people in need.',
-      badges: [
-        RoleBadge(
-          text: 'Demand Side',
-          backgroundColor: AppColors.slateBadgeBg,
-          textColor: AppColors.slateBadgeText,
-        ),
-      ],
     ),
     RoleItem(
       role: UserRole.volunteer,
       title: '3. Volunteer',
       description:
           'Pickup couriers and field dispatchers facilitating timely micro-transit handover.',
-      badges: [
-        RoleBadge(
-          text: 'Logistics',
-          backgroundColor: AppColors.slateBadgeBg,
-          textColor: AppColors.slateBadgeText,
-        ),
-      ],
     ),
   ];
 
@@ -1358,21 +1164,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-        const SizedBox(height: 6),
-
-        // Subtitle
-        const Center(
-          child: Text(
-            'Seamless authentication and specialized access tier allocation.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
         // Segmented Control (Sign In vs Sign Up)
         SegmentedAuthTab(
