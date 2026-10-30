@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../login.dart';
 import '../../services/auth_service.dart';
 import '../../services/location_service.dart';
@@ -16,6 +17,8 @@ class VolunteerSignUpPage extends StatefulWidget {
 }
 
 class _VolunteerSignUpPageState extends State<VolunteerSignUpPage> {
+  final _formKey = GlobalKey<FormState>();
+
   late final TextEditingController _nameController;
   late final TextEditingController _locationController;
   late final TextEditingController _phoneController;
@@ -24,6 +27,7 @@ class _VolunteerSignUpPageState extends State<VolunteerSignUpPage> {
   late final List<TextEditingController> _otpControllers;
   late final List<FocusNode> _otpFocusNodes;
 
+  int _currentStep = 0;
   String _transitMode = 'Two-Wheeler';
   bool _otpSent = false;
   int _resendCountdown = 60;
@@ -35,23 +39,18 @@ class _VolunteerSignUpPageState extends State<VolunteerSignUpPage> {
   final List<Map<String, dynamic>> _transitOptions = [
     {
       'title': 'Two-Wheeler',
-      'subtitle': 'Fastest for 5-15kg parcels',
-      'icon': Icons.bolt_rounded,
+      'subtitle': 'Best for <15 parcels',
+      'icon': Icons.two_wheeler_rounded,
     },
     {
       'title': 'Car / Van',
-      'subtitle': 'Best for bulk banquet surplus',
+      'subtitle': 'Best for <50 parcels',
       'icon': Icons.directions_car_filled_rounded,
     },
     {
-      'title': 'Bicycle',
-      'subtitle': 'Eco micro-transit within 3km',
-      'icon': Icons.pedal_bike_rounded,
-    },
-    {
-      'title': 'On Foot',
-      'subtitle': 'Immediate neighborhood drops',
-      'icon': Icons.directions_walk_rounded,
+      'title': 'Semi Truck',
+      'subtitle': 'Capacity 50–300 parcels',
+      'icon': Icons.local_shipping_rounded,
     },
   ];
 
@@ -67,6 +66,9 @@ class _VolunteerSignUpPageState extends State<VolunteerSignUpPage> {
       _locationDetected = true;
     }
     _phoneController = TextEditingController();
+    _phoneController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _emailController = TextEditingController();
     _otpControllers = List.generate(8, (_) => TextEditingController());
     _otpFocusNodes = List.generate(8, (_) => FocusNode());
@@ -589,6 +591,8 @@ class _VolunteerSignUpPageState extends State<VolunteerSignUpPage> {
                   _buildTopBar(context),
                   const SizedBox(height: 24),
                   _buildHeader(),
+                  const SizedBox(height: 24),
+                  _buildStepIndicator(),
                   const SizedBox(height: 28),
                   Container(
                     decoration: BoxDecoration(
@@ -604,354 +608,16 @@ class _VolunteerSignUpPageState extends State<VolunteerSignUpPage> {
                       ],
                     ),
                     padding: const EdgeInsets.all(28),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Section 1: Volunteer Identity
-                        _buildSectionTitle(
-                          number: '1',
-                          title: 'Volunteer Identity & Verification',
-                          badge: 'Required for courier dispatch',
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Provide government verification details to guarantee chain-of-custody safety.',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        _buildLabel('Full Name (as per official ID) *'),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _nameController,
-                          decoration: _inputDecoration(
-                            hint: 'e.g. John Doe',
-                            icon: Icons.person_rounded,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: _buildLabel('Transit Operating Base / City *'),
-                            ),
-                            const SizedBox(width: 6),
-                            _buildDetectLocationButton(),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _locationController,
-                          decoration: InputDecoration(
-                            hintText: 'e.g. Indiranagar Logistics Hub, Bengaluru',
-                            hintStyle: const TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 13,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.location_on_outlined,
-                              size: 18,
-                              color: AppColors.textSecondary,
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 12),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide:
-                                  const BorderSide(color: Color(0xFFE2E8F0)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                  color: AppColors.primaryGold, width: 2),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildLabel('Contact Mobile Number *'),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          decoration: _inputDecoration(
-                            hint: '+91 98765 43210',
-                            icon: Icons.phone_android_rounded,
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        const Divider(color: AppColors.borderSubtle),
-                        const SizedBox(height: 20),
-
-                        // Section 2: Transit & Vehicle Mode
-                        _buildSectionTitle(
-                          number: '2',
-                          title: 'Transit & Delivery Mode',
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Select the transportation method you will use for surplus pick-up and handovers.',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isWide = constraints.maxWidth >= 580;
-                            return GridView.count(
-                              crossAxisCount: isWide ? 2 : 1,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              mainAxisSpacing: 10,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: isWide ? 3.2 : 4.0,
-                              children: _transitOptions.map((opt) {
-                                final isSelected = _transitMode == opt['title'];
-                                return GestureDetector(
-                                  onTap: () => setState(
-                                      () => _transitMode = opt['title']),
-                                  child: AnimatedContainer(
-                                    duration:
-                                        const Duration(milliseconds: 150),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? AppColors.cardBackgroundSelected
-                                          : Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? AppColors.primaryGold
-                                            : const Color(0xFFE2E8F0),
-                                        width: isSelected ? 2.0 : 1.2,
-                                      ),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 8),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 36,
-                                          height: 36,
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? AppColors.primaryGold
-                                                : const Color(0xFFF1F5F9),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            opt['icon'] as IconData,
-                                            size: 18,
-                                            color: isSelected
-                                                ? Colors.black87
-                                                : AppColors.textSecondary,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                opt['title'] as String,
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: AppColors.textPrimary,
-                                                ),
-                                              ),
-                                              Text(
-                                                opt['subtitle'] as String,
-                                                style: const TextStyle(
-                                                  fontSize: 11,
-                                                  color:
-                                                      AppColors.textSecondary,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        if (isSelected)
-                                          const Icon(Icons.check_circle_rounded,
-                                              size: 18,
-                                              color: AppColors.primaryGoldDark),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 28),
-                        const Divider(color: AppColors.borderSubtle),
-                        const SizedBox(height: 20),
-
-                        // Section 3: Instant Email Verification
-                        _buildSectionTitle(
-                          number: '3',
-                          title: 'Email Verification',
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'We authenticate your volunteer account securely via a one-time passcode sent to your email.',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        _buildLabel('Volunteer Email Address *'),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _emailController,
-                                keyboardType: TextInputType.emailAddress,
-                                decoration: _inputDecoration(
-                                  hint: 'volunteer@example.com',
-                                  icon: Icons.alternate_email_rounded,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: _isSendingOtp ? null : _sendOtp,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF18181B),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              child: _isSendingOtp
-                                  ? const SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : Text(_otpSent ? 'Resend' : 'Send Code'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-
-                        // Interactive OTP entry
-                        if (_otpSent) ...[
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppColors.ruleBannerBackground,
-                              borderRadius: BorderRadius.circular(12),
-                              border:
-                                  Border.all(color: AppColors.borderRuleBanner),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Row(
-                                      children: [
-                                        Icon(Icons.mark_email_read_rounded,
-                                            color: AppColors.primaryGoldDark,
-                                            size: 16),
-                                        SizedBox(width: 6),
-                                        Text(
-                                          'Enter 8-Digit Verification Code',
-                                          style: TextStyle(
-                                            fontSize: 12.5,
-                                            fontWeight: FontWeight.w800,
-                                            color: AppColors.textRule,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Text(
-                                      _resendCountdown > 0
-                                          ? 'Expires in ${_resendCountdown}s'
-                                          : 'Code expired',
-                                      style: const TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.primaryGoldDark,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                SixDigitOtpInput(
-                                  controllers: _otpControllers,
-                                  focusNodes: _otpFocusNodes,
-                                  activeBorderColor: AppColors.primaryGoldDark,
-                                  onCompleted: (code) {
-                                    _submitRegistration();
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-
-                        // Submit Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed:
-                                _isSubmitting ? null : _submitRegistration,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryGold,
-                              foregroundColor: Colors.black87,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: _isSubmitting
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2),
-                                  )
-                                : const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        'Join Volunteer Delivery Network',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                      SizedBox(width: 8),
-                                      Icon(Icons.arrow_forward_rounded, size: 18),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                      ],
+                    child: Form(
+                      key: _formKey,
+                      child: AnimatedCrossFade(
+                        duration: const Duration(milliseconds: 250),
+                        crossFadeState: _currentStep == 0
+                            ? CrossFadeState.showFirst
+                            : CrossFadeState.showSecond,
+                        firstChild: _buildStepOnePersonalDetails(),
+                        secondChild: _buildStepTwoVerification(),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -970,6 +636,539 @@ class _VolunteerSignUpPageState extends State<VolunteerSignUpPage> {
     );
   }
 
+  Widget _buildStepIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildStepChip(
+          index: 0,
+          label: 'Personal Details',
+          isActive: _currentStep == 0,
+          isCompleted: _currentStep > 0,
+        ),
+        Container(
+          width: 32,
+          height: 2,
+          color: _currentStep > 0 ? AppColors.primaryGold : AppColors.borderSubtle,
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+        ),
+        _buildStepChip(
+          index: 1,
+          label: 'Verification',
+          isActive: _currentStep == 1,
+          isCompleted: false,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepChip({
+    required int index,
+    required String label,
+    required bool isActive,
+    required bool isCompleted,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        if (index < _currentStep) {
+          setState(() => _currentStep = index);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive
+              ? AppColors.primaryGold.withValues(alpha: 0.15)
+              : (isCompleted ? AppColors.greenBadgeBg : Colors.transparent),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive
+                ? AppColors.primaryGold
+                : (isCompleted ? AppColors.greenBadgeText : AppColors.borderSubtle),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isCompleted)
+              const Icon(Icons.check_circle_rounded,
+                  size: 14, color: AppColors.greenBadgeText)
+            else
+              Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: isActive ? AppColors.primaryGold : AppColors.borderSubtle,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${index + 1}',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: isActive ? Colors.black87 : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                color: isActive
+                    ? AppColors.textPrimary
+                    : (isCompleted
+                        ? AppColors.greenBadgeText
+                        : AppColors.textSecondary),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- STEP 1: PERSONAL DETAILS ---
+  Widget _buildStepOnePersonalDetails() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel('Full Name (as per official ID) *'),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: _nameController,
+          validator: (v) => (v == null || v.trim().isEmpty)
+              ? 'Please enter your full name'
+              : null,
+          decoration: _inputDecoration(
+            hint: 'e.g. John Doe',
+            icon: Icons.person_rounded,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: _buildLabel('Transit Operating Base / City *'),
+            ),
+            const SizedBox(width: 6),
+            _buildDetectLocationButton(),
+          ],
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: _locationController,
+          decoration: InputDecoration(
+            hintText: 'e.g. Indiranagar Logistics Hub, Bengaluru',
+            hintStyle: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 13,
+            ),
+            prefixIcon: const Icon(
+              Icons.location_on_outlined,
+              size: 18,
+              color: AppColors.textSecondary,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide:
+                  const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(
+                  color: AppColors.primaryGold, width: 2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildLabel('Contact Mobile Number *'),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
+          ],
+          validator: (v) {
+            if (v == null || v.trim().isEmpty) {
+              return 'Please enter contact mobile number';
+            }
+            if (v.trim().length != 10) {
+              return 'Mobile number must be exactly 10 digits';
+            }
+            return null;
+          },
+          decoration: InputDecoration(
+            hintText: '9876543210',
+            hintStyle: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 13,
+            ),
+            prefixIcon: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.phone_android_rounded,
+                      size: 18, color: AppColors.textSecondary),
+                  SizedBox(width: 6),
+                  Text(
+                    '+91',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    '|',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFFCBD5E1),
+                      fontWeight: FontWeight.w300,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            counterText: '${_phoneController.text.length}/10',
+            counterStyle: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: _phoneController.text.length == 10
+                  ? AppColors.greenBadgeText
+                  : AppColors.textSecondary,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide:
+                  const BorderSide(color: AppColors.primaryGold, width: 2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        _buildLabel('Transit & Delivery Mode *'),
+        const SizedBox(height: 10),
+
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 600;
+            return GridView.count(
+              crossAxisCount: isWide ? 3 : 1,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 12,
+              childAspectRatio: isWide ? 2.5 : 4.0,
+              children: _transitOptions.map((opt) {
+                final isSelected = _transitMode == opt['title'];
+                return GestureDetector(
+                  onTap: () => setState(() => _transitMode = opt['title']),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.cardBackgroundSelected
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primaryGold
+                            : const Color(0xFFE2E8F0),
+                        width: isSelected ? 2.0 : 1.2,
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primaryGold
+                                : const Color(0xFFF1F5F9),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            opt['icon'] as IconData,
+                            size: 18,
+                            color: isSelected
+                                ? Colors.black87
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                opt['title'] as String,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                opt['subtitle'] as String,
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isSelected)
+                          const Icon(Icons.check_circle_rounded,
+                              size: 18, color: AppColors.primaryGoldDark),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+        const SizedBox(height: 28),
+
+        // Continue to Verification Button
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton(
+            onPressed: () {
+              if (_nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    backgroundColor: Colors.redAccent,
+                    content: Text('Please enter your full name.'),
+                  ),
+                );
+                return;
+              }
+              if (_phoneController.text.trim().length != 10) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    backgroundColor: Colors.redAccent,
+                    content: Text('Contact mobile number must be exactly 10 digits.'),
+                  ),
+                );
+                return;
+              }
+              if (_formKey.currentState?.validate() ?? true) {
+                setState(() => _currentStep = 1);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryGold,
+              foregroundColor: Colors.black87,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Continue to Verification',
+                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800),
+                ),
+                SizedBox(width: 8),
+                Icon(Icons.arrow_forward_rounded, size: 18),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- STEP 2: VERIFICATION FLOW ---
+  Widget _buildStepTwoVerification() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel('Volunteer Email Address *'),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: _inputDecoration(
+                  hint: 'volunteer@example.com',
+                  icon: Icons.alternate_email_rounded,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: _isSendingOtp ? null : _sendOtp,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF18181B),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: _isSendingOtp
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(_otpSent ? 'Resend' : 'Send Code'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // Interactive OTP entry
+        if (_otpSent) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.ruleBannerBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.borderRuleBanner),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.mark_email_read_rounded,
+                            color: AppColors.primaryGoldDark,
+                            size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          'Enter 8-Digit Verification Code',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textRule,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      _resendCountdown > 0
+                          ? 'Expires in ${_resendCountdown}s'
+                          : 'Code expired',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryGoldDark,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SixDigitOtpInput(
+                  controllers: _otpControllers,
+                  focusNodes: _otpFocusNodes,
+                  activeBorderColor: AppColors.primaryGoldDark,
+                  onCompleted: (code) {
+                    _submitRegistration();
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+
+        // Submit Button
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton(
+            onPressed:
+                _isSubmitting ? null : _submitRegistration,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryGold,
+              foregroundColor: Colors.black87,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: _isSubmitting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Verify & Complete Volunteer Registration',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.arrow_forward_rounded, size: 18),
+                    ],
+                  ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: TextButton.icon(
+            onPressed: () => setState(() => _currentStep = 0),
+            icon: const Icon(Icons.arrow_back_rounded, size: 16),
+            label: const Text('Back to Personal Details'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.textSecondary,
+              textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTopBar(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -978,7 +1177,13 @@ class _VolunteerSignUpPageState extends State<VolunteerSignUpPage> {
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                if (_currentStep > 0) {
+                  setState(() => _currentStep--);
+                } else {
+                  Navigator.pop(context);
+                }
+              },
               tooltip: 'Back',
             ),
             const SizedBox(width: 4),
@@ -1027,9 +1232,19 @@ class _VolunteerSignUpPageState extends State<VolunteerSignUpPage> {
                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginPage(
+                        initialSignUp: false,
+                        initialRole: UserRole.volunteer,
+                      ),
+                    ),
+                  );
+                },
                 child: const Text(
-                  'Log In',
+                  'Sign In',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -1064,70 +1279,6 @@ class _VolunteerSignUpPageState extends State<VolunteerSignUpPage> {
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
-      ],
-    );
-  }
-
-  Widget _buildSectionTitle({
-    required String number,
-    required String title,
-    String? badge,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryGold,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  number,
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (badge != null && badge.isNotEmpty) ...[
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: AppColors.selectedPillBg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              badge,
-              style: const TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                color: AppColors.selectedPillText,
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }

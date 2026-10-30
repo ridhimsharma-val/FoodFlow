@@ -687,7 +687,17 @@ class _ProviderSignUpPageState extends State<ProviderSignUpPage> {
                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginPage(
+                        initialSignUp: false,
+                        initialRole: UserRole.provider,
+                      ),
+                    ),
+                  );
+                },
                 child: const Text(
                   'Sign In',
                   style: TextStyle(
@@ -706,33 +716,9 @@ class _ProviderSignUpPageState extends State<ProviderSignUpPage> {
   }
 
   Widget _buildHeader() {
-    return Column(
+    return const Column(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          decoration: BoxDecoration(
-            color: AppColors.selectedPillBg,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.storefront_rounded,
-                  size: 14, color: AppColors.selectedPillText),
-              SizedBox(width: 6),
-              Text(
-                'Food Donor Registration',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.selectedPillText,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        const Text(
+        Text(
           'Sign Up as Food Provider',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -742,8 +728,8 @@ class _ProviderSignUpPageState extends State<ProviderSignUpPage> {
             letterSpacing: -0.4,
           ),
         ),
-        const SizedBox(height: 6),
-        const Text(
+        SizedBox(height: 6),
+        Text(
           'Register your culinary facility to direct surplus batches to local verified relief agencies.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
@@ -851,21 +837,6 @@ class _ProviderSignUpPageState extends State<ProviderSignUpPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Provider Establishment Details",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Provide official establishment credentials to guarantee food safety compliance.',
-          style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 20),
-
         // Organization Name
         _buildFieldLabel("Name of Provider's Organisation *"),
         const SizedBox(height: 6),
