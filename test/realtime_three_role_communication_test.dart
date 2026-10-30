@@ -1,0 +1,305 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:food_flow/pages/provider/provider_dashboard.dart';
+import 'package:food_flow/pages/receiver/receiver_dashboard.dart';
+import 'package:food_flow/services/food_rescue_service.dart';
+import 'package:food_flow/widgets/active_rescue_bottom_popup.dart';
+import 'package:latlong2/latlong.dart';
+
+void main() {
+  group('Real-Time Three-Role Rescue Communication Tests', () {
+    late FoodRescueService service;
+
+    setUp(() {
+      service = FoodRescueService.instance;
+    });
+
+    test('One shared batch update notifies both Provider and Receiver in FoodRescueService', () {
+      // 1. Provider lists food
+      final batch = service.listNewBatch(
+        providerName: 'Grand Hyatt Kitchen',
+        providerCategory: 'Hotel & Banquets',
+        title: '50 Portions Dal Makhani & Rice',
+        category: 'Cooked Meals & Thalis',
+        quantityPortions: 50,
+        dietaryType: 'Pure Veg',
+        temperatureCelsius: 65.0,
+        packagingType: 'Thermal Foil Trays',
+        pickupAddress: 'Embassy Golf Links, Bengaluru',
+        location: const LatLng(12.9500, 77.6400),
+      );
+
+      expect(batch.status, equals(BatchStatus.available));
+      // Initially no active rescue popup for provider or receiver
+      expect(service.getActiveRescueForProvider('Grand Hyatt Kitchen'), isNull);
+      expect(service.getActiveRescueForReceiver('Care & Share NGO'), isNull);
+
+      // 2. Receiver claims food
+      final claimed = service.claimBatch(
+        batchId: batch.id,
+        ngoName: 'Care & Share NGO',
+      );
+      expect(claimed, isTrue);
+      expect(batch.status, equals(BatchStatus.claimed));
+
+      // 3. Volunteer accepts pickup
+      final accepted = service.acceptDeliveryTask(
+        batchId: batch.id,
+        volunteerId: 'VOL-TEST-88',
+        volunteerName: 'Deepak Patel',
+        volunteerPhone: '+91 91111 22222',
+        delayFinalize: false,
+      );
+      expect(accepted, isTrue);
+      expect(batch.assignedCourierName, equals('Deepak Patel'));
+      expect(batch.status, isIn([BatchStatus.volunteerAssigning, BatchStatus.inTransitToPickup]));
+
+      // 4. Verification: Both Provider and Receiver find this ONE shared rescue record
+      final providerRescue = service.getActiveRescueForProvider('Grand Hyatt Kitchen');
+      expect(providerRescue, isNotNull);
+      expect(providerRescue!.id, equals(batch.id));
+      expect(providerRescue.pickupOtp, equals(batch.pickupOtp));
+
+      final receiverRescue = service.getActiveRescueForReceiver('Care & Share NGO');
+      expect(receiverRescue, isNotNull);
+      expect(receiverRescue!.id, equals(batch.id));
+      expect(receiverRescue.deliveryOtp, equals(batch.deliveryOtp));
+    });
+
+    testWidgets('ActiveRescueBottomPopup renders immediately for Provider with PIN and Courier info', (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final batch = service.listNewBatch(
+        providerName: 'Paradise Biryani Hub',
+        providerCategory: 'Restaurant',
+        title: '70 Portions Veg Biryani',
+        category: 'Cooked Meals & Thalis',
+        quantityPortions: 70,
+        dietaryType: 'Pure Veg',
+        temperatureCelsius: 62.0,
+        packagingType: 'Foil Boxes',
+        pickupAddress: 'Koramangala 4th Block',
+        location: const LatLng(12.9340, 77.6250),
+      );
+
+      service.claimBatch(
+        batchId: batch.id,
+        ngoName: 'Annapurna Trust',
+      );
+
+      service.startVolunteerAssignment(
+        batchId: batch.id,
+        volunteerId: 'VOL-445',
+        volunteerName: 'Ravi Teja',
+        volunteerPhone: '+91 97777 55555',
+        autoFinalize: false,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ActiveRescueBottomPopup(
+              role: ActiveRescueRole.provider,
+              providerName: 'Paradise Biryani Hub',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Check Provider Header & Live Active Status
+      expect(find.text('LIVE RESCUE ACTIVE'), findsOneWidget);
+      expect(find.text('70 Portions Veg Biryani'), findsOneWidget);
+      expect(find.text('Ravi Teja'), findsOneWidget);
+
+      // Check Handover PIN badge
+      expect(find.text('PIN: ${batch.pickupOtp}'), findsOneWidget);
+
+      // Check CTA
+      expect(find.text('Track Live Delivery / Open Rescue'), findsOneWidget);
+    });
+
+    testWidgets('ActiveRescueBottomPopup renders immediately for Receiver with OTP and Delivery info', (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final batch = service.listNewBatch(
+        providerName: 'Spice Symphony',
+        providerCategory: 'Restaurant',
+        title: '40 Meals Combo Pack',
+        category: 'Cooked Meals & Thalis',
+        quantityPortions: 40,
+        dietaryType: 'Pure Veg',
+        temperatureCelsius: 60.0,
+        packagingType: 'Boxes',
+        pickupAddress: 'Indiranagar 12th Main',
+        location: const LatLng(12.9700, 77.6400),
+      );
+
+      service.claimBatch(
+        batchId: batch.id,
+        ngoName: 'Asha Child Shelter',
+      );
+
+      service.startVolunteerAssignment(
+        batchId: batch.id,
+        volunteerId: 'VOL-446',
+        volunteerName: 'Manish Kumar',
+        volunteerPhone: '+91 98888 77777',
+        autoFinalize: false,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ActiveRescueBottomPopup(
+              role: ActiveRescueRole.receiver,
+              receiverOrg: 'Asha Child Shelter',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Check Receiver Header & Delivery in Progress Status
+      expect(find.text('DELIVERY IN PROGRESS'), findsOneWidget);
+      expect(find.text('40 Meals Combo Pack'), findsOneWidget);
+      expect(find.text('Manish Kumar'), findsOneWidget);
+
+      // Check Delivery OTP badge
+      expect(find.text('OTP: ${batch.deliveryOtp}'), findsOneWidget);
+
+      // Check CTA
+      expect(find.text('Track Delivery'), findsOneWidget);
+    });
+
+    testWidgets('ProviderDashboard renders ActiveRescueBottomPopup when volunteer accepts rescue', (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final batch = service.listNewBatch(
+        providerName: 'Green Leaf Eatery',
+        providerCategory: 'Restaurant',
+        title: '30 Portions Fried Rice',
+        category: 'Cooked Meals & Thalis',
+        quantityPortions: 30,
+        dietaryType: 'Pure Veg',
+        temperatureCelsius: 60.0,
+        packagingType: 'Containers',
+        pickupAddress: 'HSR Layout Sector 1',
+        location: const LatLng(12.9100, 77.6500),
+      );
+
+      service.claimBatch(batchId: batch.id, ngoName: 'Hope Foundation');
+      service.startVolunteerAssignment(
+        batchId: batch.id,
+        volunteerId: 'VOL-777',
+        volunteerName: 'Suraj Singh',
+        autoFinalize: false,
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ProviderDashboard(),
+        ),
+      );
+      await tester.pump();
+
+      // Bottom popup is present on Provider Dashboard!
+      expect(find.text('LIVE RESCUE ACTIVE'), findsOneWidget);
+      expect(find.text('PIN: ${batch.pickupOtp}'), findsOneWidget);
+    });
+
+    testWidgets('ReceiverDashboard renders ActiveRescueBottomPopup when volunteer accepts rescue', (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final batch = service.listNewBatch(
+        providerName: 'Bake & Flake',
+        providerCategory: 'Bakery',
+        title: '50 Fresh Bagels',
+        category: 'Bakery & Dry Ration',
+        quantityPortions: 50,
+        dietaryType: 'Eggless Veg',
+        temperatureCelsius: 22.0,
+        packagingType: 'Paper Bags',
+        pickupAddress: 'Koramangala 1st Block',
+        location: const LatLng(12.9250, 77.6300),
+      );
+
+      service.claimBatch(batchId: batch.id, ngoName: 'Helping Hands NGO');
+      service.startVolunteerAssignment(
+        batchId: batch.id,
+        volunteerId: 'VOL-888',
+        volunteerName: 'Kunal Roy',
+        autoFinalize: false,
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ReceiverDashboard(),
+        ),
+      );
+      await tester.pump();
+
+      // Bottom popup is present on Receiver Dashboard!
+      expect(find.text('DELIVERY IN PROGRESS'), findsOneWidget);
+      expect(find.text('OTP: ${batch.deliveryOtp}'), findsOneWidget);
+    });
+
+    testWidgets('ActiveRescueBottomPopup can be dismissed using dismiss icon button', (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final batch = service.listNewBatch(
+        providerName: 'Taj Gateway Kitchen',
+        providerCategory: 'Hotel',
+        title: '60 Portions Pulav',
+        category: 'Cooked Meals & Thalis',
+        quantityPortions: 60,
+        dietaryType: 'Pure Veg',
+        temperatureCelsius: 65.0,
+        packagingType: 'Boxes',
+        pickupAddress: 'Residency Road',
+        location: const LatLng(12.9700, 77.6000),
+      );
+
+      service.claimBatch(batchId: batch.id, ngoName: 'Seva Trust');
+      service.startVolunteerAssignment(
+        batchId: batch.id,
+        volunteerId: 'VOL-999',
+        volunteerName: 'Aakash Verma',
+        autoFinalize: false,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ActiveRescueBottomPopup(
+              role: ActiveRescueRole.provider,
+              providerName: 'Taj Gateway Kitchen',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('LIVE RESCUE ACTIVE'), findsOneWidget);
+
+      // Tap the dismiss icon button
+      final dismissBtn = find.byIcon(Icons.close_rounded);
+      expect(dismissBtn, findsWidgets);
+      await tester.tap(dismissBtn.first);
+      await tester.pump();
+
+      // Popup is cleanly dismissed
+      expect(find.text('LIVE RESCUE ACTIVE'), findsNothing);
+    });
+  });
+}
