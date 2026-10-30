@@ -52,7 +52,7 @@ class VolunteerHomeTab extends StatelessWidget {
         final availableBatches = FoodRescueService.instance.availableDeliveryTasks;
         final activeTask = FoodRescueService.instance.getActiveTaskForVolunteer();
 
-        // Recommendations
+        // Smart Recommendations
         final recommendations = VolunteerRecommendationService.getRecommendations(
           availableTasks: availableBatches,
           volunteerLocation: latLng,
@@ -67,49 +67,41 @@ class VolunteerHomeTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Header
-                  _buildHeader(context),
+                  // 1. Cleaner, modern Top App Bar
+                  _buildTopAppBar(context),
                   const SizedBox(height: 18),
 
-                  // 2. Prominent Availability Toggle
+                  // 2. Volunteer Greeting and Operating Location
+                  _buildGreetingAndLocation(context),
+                  const SizedBox(height: 18),
+
+                  // 3. Availability Status Toggle Card (Always prominent near top)
                   _buildAvailabilityToggleCard(context),
                   const SizedBox(height: 18),
 
-                  // Active Task Banner (if any is active)
+                  // 4. Active Delivery Card (High Priority if active task exists)
                   if (activeTask != null) ...[
                     _buildActiveTaskNotice(context, activeTask),
                     const SizedBox(height: 18),
                   ],
 
-                  // 3. Main CTA: Find Nearby Tasks
+                  // 5. Main Primary CTA: Find Nearby Tasks
                   _buildFindTasksCta(context, availableBatches.length),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 24),
 
-                  // 4. Four Core Statistics
-                  _buildStatsRow(),
-                  const SizedBox(height: 18),
+                  // 6. Recommended For You (Smart Suggestions, when available)
+                  if (isAvailable && recommendations.isNotEmpty) ...[
+                    _buildRecommendedSection(context, recommendations),
+                    const SizedBox(height: 28),
+                  ],
 
-                  // 5. Courier Payouts Quick Banner
-                  _buildPayoutBanner(context),
-                  const SizedBox(height: 28),
-
-                  // If offline, display prominent offline message
+                  // 7. If offline, display prominent offline message; else show Genuine Tasks
                   if (!isAvailable) ...[
                     _buildOfflineAlertCard(context),
                     const SizedBox(height: 28),
                   ] else ...[
-                    // 5. Recommended For You (Smart Recommendations)
-                    if (recommendations.isNotEmpty) ...[
-                      _buildRecommendedSection(context, recommendations),
-                      const SizedBox(height: 28),
-                    ],
-
-                    // 6. Nearby Delivery Tasks
                     _buildNearbyTasksSection(context, availableBatches),
                     const SizedBox(height: 28),
-
-                    // 7. Nearby Delivery Map Preview
-                    _buildDeliveryMapPreview(context, availableBatches.length),
                   ],
                 ],
               ),
@@ -121,123 +113,206 @@ class VolunteerHomeTab extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // Top Header Section
+  // Top App Bar
   // ---------------------------------------------------------------------------
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.menu_rounded, color: Color(0xFF1E293B), size: 24),
-          tooltip: 'Open Menu',
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-          onPressed: onOpenDrawer,
-        ),
-        const SizedBox(width: 8),
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildTopAppBar(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Left: Food Flow logo placeholder
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Good morning, $volunteerName 👋',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF1E293B),
-                  letterSpacing: -0.3,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                children: [
-                  // Availability Indicator
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isAvailable ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(6),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFC107),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFC107).withValues(alpha: 0.35),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 7,
-                          height: 7,
-                          decoration: BoxDecoration(
-                            color: isAvailable ? const Color(0xFF16A34A) : const Color(0xFF94A3B8),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          isAvailable ? 'Available' : 'Offline',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: isAvailable ? const Color(0xFF166534) : const Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
+                  ],
+                ),
+                child: const Icon(Icons.two_wheeler_rounded, color: Colors.black87, size: 22),
+              ),
+              const SizedBox(width: 12),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Food Flow',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF1E293B),
+                      letterSpacing: -0.4,
                     ),
                   ),
-
-                  // Location chip
-                  InkWell(
-                    onTap: onDetectLocation,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.location_on_rounded, size: 14, color: Color(0xFFFFC107)),
-                        const SizedBox(width: 3),
-                        Text(
-                          location.isNotEmpty ? location : 'Greater Noida Hub',
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF475569),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                  Text(
+                    'VOLUNTEER RESCUE SQUAD',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFD97706),
+                      letterSpacing: 0.8,
                     ),
                   ),
                 ],
               ),
             ],
           ),
-        ),
 
-        // Notifications button
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1E293B), size: 20),
-            tooltip: 'Notifications',
-            onPressed: onOpenNotifications,
-          ),
-        ),
-        const SizedBox(width: 8),
+          // Right: Notification icon + Profile avatar
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                onPressed: onOpenNotifications,
+                tooltip: 'Notifications',
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(9),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1E293B), size: 20),
+                    ),
+                    Positioned(
+                      right: 2,
+                      top: 2,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFC107),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
 
-        // Profile button
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFFEF3C7),
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFFFC107)),
+              // Profile avatar
+              InkWell(
+                onTap: onOpenProfile,
+                borderRadius: BorderRadius.circular(22),
+                child: Tooltip(
+                  message: 'Volunteer Profile & Settings',
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundColor: const Color(0xFFFFC107),
+                    child: Text(
+                      volunteerName.isNotEmpty ? volunteerName[0].toUpperCase() : 'V',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1E293B),
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          child: IconButton(
-            icon: const Icon(Icons.person_rounded, color: Color(0xFFD97706), size: 20),
-            tooltip: 'Profile',
-            onPressed: onOpenProfile,
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Greeting & Location Context
+  // ---------------------------------------------------------------------------
+  Widget _buildGreetingAndLocation(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Good morning, $volunteerName 👋',
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF1E293B),
+            letterSpacing: -0.4,
           ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            // Availability Indicator
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: isAvailable ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: isAvailable ? const Color(0xFF16A34A) : const Color(0xFF94A3B8),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    isAvailable ? 'Available' : 'Offline',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: isAvailable ? const Color(0xFF166534) : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Location chip
+            InkWell(
+              onTap: onDetectLocation,
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.location_on_rounded, size: 14, color: Color(0xFFFFC107)),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        location.isNotEmpty ? location : 'Greater Noida Hub',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF475569),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -306,47 +381,147 @@ class VolunteerHomeTab extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // Active Task Notice (if volunteer has a delivery currently in progress)
+  // Active Task Notice (Prioritized when courier is actively executing a task)
   // ---------------------------------------------------------------------------
   Widget _buildActiveTaskNotice(BuildContext context, SurplusBatch task) {
-    return InkWell(
-      onTap: () {
-        SharedRescueTrackingPage.open(
-          context,
-          batch: task,
-          role: RescueTrackingRole.volunteer,
-        );
-      },
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFDCFCE7),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF86EFAC), width: 1.5),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.two_wheeler_rounded, color: Color(0xFF16A34A), size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Active Delivery in Progress 🚴',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5, color: Color(0xFF166534)),
-                  ),
-                  Text(
-                    '${task.title} (${task.quantityPortions} meals) • Tap to view live tracking & timeline',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF14532D)),
-                  ),
-                ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF86EFAC), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.two_wheeler_rounded, color: Color(0xFF16A34A), size: 22),
               ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF16A34A), size: 14),
-          ],
-        ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'ACTIVE DELIVERY IN PROGRESS 🚴',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF166534),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Text(
+                      task.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1E293B),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  task.status == BatchStatus.inTransitToPickup
+                      ? 'En Route Pickup'
+                      : task.status == BatchStatus.arrivedAtPickup
+                          ? 'At Provider'
+                          : task.status == BatchStatus.pickedUp || task.status == BatchStatus.inTransit
+                              ? 'In Transit'
+                              : 'Arrived Dropoff',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF166534)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFDCFCE7)),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.storefront_rounded, size: 14, color: Color(0xFF64748B)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Pickup: ${task.providerName} (${task.pickupAddress})',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.volunteer_activism_rounded, size: 14, color: Color(0xFF16A34A)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Dropoff: ${task.claimedByNgo ?? 'Verified Relief NGO'} (${task.receiverDropoffAddress ?? 'Indiranagar Shelter'})',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (task.courierEtaMinutes != null)
+                Text(
+                  '⏱️ ETA: ~${task.courierEtaMinutes} mins${task.distanceRemainingKm != null ? ' (${task.distanceRemainingKm} km)' : ''}',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF166534)),
+                )
+              else
+                Text(
+                  '📦 ${task.quantityPortions} meals · OTP Protected',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF166534)),
+                ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  SharedRescueTrackingPage.open(
+                    context,
+                    batch: task,
+                    role: RescueTrackingRole.volunteer,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF16A34A),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.navigation_rounded, size: 15),
+                label: const Text('Open Tracking', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -418,119 +593,6 @@ class VolunteerHomeTab extends StatelessWidget {
             ),
             child: const Text('Explore Tasks', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
           ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // 4 Core Statistics
-  // ---------------------------------------------------------------------------
-  Widget _buildStatsRow() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cardWidth = constraints.maxWidth > 580
-            ? (constraints.maxWidth - 36) / 4
-            : (constraints.maxWidth - 12) / 2;
-
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            _buildStatCard('12', 'Tasks Completed', Icons.check_circle_outline_rounded, const Color(0xFFD97706), const Color(0xFFFEF3C7), cardWidth),
-            _buildStatCard('420', 'Meals Delivered', Icons.restaurant_rounded, const Color(0xFF2563EB), const Color(0xFFDBEAFE), cardWidth),
-            _buildStatCard('210 kg', 'Food Rescued', Icons.inventory_2_rounded, const Color(0xFF16A34A), const Color(0xFFDCFCE7), cardWidth),
-            _buildStatCard('28 kg', 'CO₂ Avoided', Icons.eco_rounded, const Color(0xFF9333EA), const Color(0xFFF3E8FF), cardWidth),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildStatCard(String val, String label, IconData icon, Color color, Color bg, double width) {
-    return Container(
-      width: width,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              Text(
-                val,
-                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPayoutBanner(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFEF9C3),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFDE047)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF854D0E), size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Courier Payouts & Receipts',
-                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900, color: Color(0xFF854D0E)),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Instant UPI settlement active · 100% verified disbursals',
-                  style: TextStyle(fontSize: 12, color: Color(0xFFA16207), fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-          ),
-          if (onOpenPaymentsTab != null)
-            ElevatedButton(
-              onPressed: onOpenPaymentsTab,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF854D0E),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('View Details', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-            ),
         ],
       ),
     );
@@ -688,36 +750,117 @@ class VolunteerHomeTab extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Nearby Delivery Tasks',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1E293B), letterSpacing: -0.2),
+            Row(
+              children: [
+                const Text(
+                  'Nearby Delivery Tasks',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1E293B), letterSpacing: -0.2),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${tasks.length}',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFB45309)),
+                  ),
+                ),
+              ],
             ),
             TextButton(
               onPressed: onOpenTasksTab,
-              child: const Text('See All Tasks', style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFD97706))),
+              child: const Text('See All Tasks →', style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFD97706))),
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        if (tasks.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Center(
-              child: Text(
-                'No claimed food awaiting delivery right now. Once an NGO receiver claims listed surplus, courier dispatch will appear here.',
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          )
+        const SizedBox(height: 12),
+        if (FoodRescueService.instance.lastFetchError != null && tasks.isEmpty)
+          _buildErrorState()
+        else if (tasks.isEmpty)
+          _buildEmptyTasksCard()
         else
-          ...tasks.take(3).map((task) => _buildTaskCard(context, task)),
+          ...tasks.take(4).map((task) => _buildTaskCard(context, task)),
       ],
+    );
+  }
+
+  Widget _buildEmptyTasksCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.delivery_dining_outlined, size: 42, color: Color(0xFF94A3B8)),
+          const SizedBox(height: 12),
+          const Text(
+            'No pickup requests available right now.',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'New pickup opportunities will appear here when food is ready for collection.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: () => FoodRescueService.instance.initSupabaseSync('refresh'),
+            icon: const Icon(Icons.refresh_rounded, size: 16, color: Color(0xFFD97706)),
+            label: const Text('Refresh', style: TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.w700)),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFFFFC107)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFCA5A5)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.cloud_off_rounded, size: 40, color: Color(0xFFEF4444)),
+          const SizedBox(height: 12),
+          const Text(
+            'Unable to load nearby pickup requests.',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF991B1B)),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Check your network connection and try again.',
+            style: TextStyle(fontSize: 12.5, color: Color(0xFFB91C1C)),
+          ),
+          const SizedBox(height: 14),
+          ElevatedButton.icon(
+            onPressed: () => FoodRescueService.instance.initSupabaseSync('retry'),
+            icon: const Icon(Icons.refresh_rounded, size: 16),
+            label: const Text('Retry', style: TextStyle(fontWeight: FontWeight.w700)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -725,15 +868,22 @@ class VolunteerHomeTab extends StatelessWidget {
     final pickupKm = _getPickupDistance(batch.location);
     final deliveryKm = 2.8;
     final totalKm = double.parse((pickupKm + deliveryKm).toStringAsFixed(1));
-    final window = '7:00 PM – 8:00 PM';
+    final window = 'Safe pickup window: ~${batch.remainingSafeTime.inHours}h remaining';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -741,10 +891,14 @@ class VolunteerHomeTab extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                batch.title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
+              Flexible(
+                child: Text(
+                  batch.title,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -765,9 +919,12 @@ class VolunteerHomeTab extends StatelessWidget {
             children: [
               const Icon(Icons.store_rounded, size: 14, color: Color(0xFFD97706)),
               const SizedBox(width: 6),
-              Text(
-                'Pickup: ${batch.providerName} • $pickupKm km away',
-                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+              Expanded(
+                child: Text(
+                  'Pickup: ${batch.providerName} • $pickupKm km away',
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -778,9 +935,12 @@ class VolunteerHomeTab extends StatelessWidget {
             children: [
               const Icon(Icons.volunteer_activism_rounded, size: 14, color: Color(0xFF16A34A)),
               const SizedBox(width: 6),
-              Text(
-                'Deliver to: ${batch.claimedByNgo ?? 'Helping Hands NGO'} • $deliveryKm km away',
-                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+              Expanded(
+                child: Text(
+                  'Deliver to: ${batch.claimedByNgo ?? 'Verified Relief NGO'} • $deliveryKm km away',
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -789,10 +949,14 @@ class VolunteerHomeTab extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Estimated Distance: $totalKm km • $window',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+              Expanded(
+                child: Text(
+                  'Estimated Distance: $totalKm km • $window',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               ElevatedButton(
                 onPressed: () {
                   VolunteerTaskDetailsDialog.show(
@@ -814,49 +978,6 @@ class VolunteerHomeTab extends StatelessWidget {
                 child: const Text('View Task', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Nearby Delivery Map Preview
-  // ---------------------------------------------------------------------------
-  Widget _buildDeliveryMapPreview(BuildContext context, int count) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.map_rounded, color: Color(0xFFD97706), size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Nearby Delivery Map',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
-                  ),
-                ],
-              ),
-              TextButton(
-                onPressed: onOpenTasksTab,
-                child: const Text('Explore Map', style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFD97706))),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$count pickup & dropoff checkpoints active in your current courier radius',
-            style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
           ),
         ],
       ),

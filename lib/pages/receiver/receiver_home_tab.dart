@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import '../../services/food_rescue_service.dart';
 import '../../services/matching_service.dart';
-import '../../widgets/app_drawer.dart';
 import 'food_details_dialog.dart';
 import 'claim_confirmation_dialog.dart';
-import 'nearby_food_map_page.dart';
 
 class ReceiverHomeTab extends StatelessWidget {
   final String receiverName;
@@ -47,16 +45,9 @@ class ReceiverHomeTab extends StatelessWidget {
     return ListenableBuilder(
       listenable: FoodRescueService.instance,
       builder: (context, _) {
-        final allBatches = FoodRescueService.instance.batches;
         final availableBatches = FoodRescueService.instance.availableBatches;
 
-        // Dynamic metrics based on actual batches
-        final claimedCount = allBatches.where((b) => b.status == BatchStatus.claimed).length;
-        final confirmedCount = allBatches.where((b) => b.status == BatchStatus.inTransitToPickup).length;
-        final distributedCount = allBatches.where((b) => b.status == BatchStatus.delivered).length;
-        final foodSavedKg = (allBatches.where((b) => b.status == BatchStatus.delivered).fold<int>(0, (s, b) => s + b.quantityPortions) * 0.5) + 120.0;
-
-        // Recommendations
+        // Smart Recommendations
         final recommendations = ReceiverRecommendationService.getRecommendations(
           availableBatches: availableBatches,
           receiverLocation: latLng,
@@ -75,22 +66,13 @@ class ReceiverHomeTab extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 1. Top Header Section
-                      _buildHeader(context),
+                      // 1. Cleaner, modern Top App Bar
+                      _buildTopAppBar(context),
                       const SizedBox(height: 20),
 
-                      // 2. Large Primary CTA: Find Available Food
+                      // 2. Primary CTA: Find Available Food
                       _buildPrimaryCta(context, availableBatches.length),
-                      const SizedBox(height: 22),
-
-                      // 3. Four Core Statistics
-                      _buildStatsRow(
-                        claimed: claimedCount > 0 ? claimedCount : 8,
-                        confirmed: confirmedCount > 0 ? confirmedCount : 5,
-                        distributed: distributedCount > 0 ? distributedCount : 3,
-                        savedKg: foodSavedKg.round(),
-                      ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 26),
 
                       // 4. Recommended For You (Smart Suggestions)
                       if (recommendations.isNotEmpty) ...[
@@ -98,20 +80,18 @@ class ReceiverHomeTab extends StatelessWidget {
                         const SizedBox(height: 28),
                       ],
 
-                      // 5. Available Near You (Food Cards)
+                      // 5. Available Near You (Genuine Food Cards)
                       _buildAvailableNearYouHeader(context, availableBatches.length),
                       const SizedBox(height: 14),
 
-                      if (availableBatches.isEmpty)
+                      if (FoodRescueService.instance.lastFetchError != null && availableBatches.isEmpty)
+                        _buildErrorState()
+                      else if (availableBatches.isEmpty)
                         _buildEmptyAvailableCard()
                       else
                         _buildFoodCardsGrid(context, availableBatches.take(4).toList(), isWide),
 
                       const SizedBox(height: 28),
-
-                      // 6. Nearby Food Map Preview Card
-                      _buildMapPreviewCard(context, availableBatches.length),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -124,151 +104,122 @@ class ReceiverHomeTab extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // Top Header
+  // Top App Bar
   // ---------------------------------------------------------------------------
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        // Drawer Menu Button
-        IconButton(
-          icon: const Icon(Icons.menu_rounded, color: Color(0xFF1E293B), size: 24),
-          tooltip: 'Open Menu',
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-          onPressed: onOpenDrawer,
-        ),
-        const SizedBox(width: 8),
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildTopAppBar(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Left: Food Flow logo placeholder
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Good morning, $receiverName 👋',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF1E293B),
-                  letterSpacing: -0.3,
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFC107),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFC107).withValues(alpha: 0.35),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                overflow: TextOverflow.ellipsis,
+                child: const Icon(Icons.restaurant_rounded, color: Colors.black87, size: 22),
               ),
-              const SizedBox(height: 4),
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 6,
-                runSpacing: 2,
+              const SizedBox(width: 12),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    organizationName,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFD97706),
+                    'Food Flow',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF1E293B),
+                      letterSpacing: -0.4,
                     ),
                   ),
-                  const Text('•', style: TextStyle(color: Color(0xFFCBD5E1))),
-                  InkWell(
-                    onTap: onDetectLocation,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.location_on_rounded, size: 14, color: Color(0xFFFFC107)),
-                        const SizedBox(width: 3),
-                        Flexible(
-                          child: Text(
-                            location.isNotEmpty ? location : 'Indiranagar Shelter, Bengaluru',
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF475569),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                  Text(
+                    'RELIEF & RESCUE PLATFORM',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFD97706),
+                      letterSpacing: 0.8,
                     ),
                   ),
                 ],
               ),
             ],
           ),
-        ),
 
-        // Prominent Log Out Button
-        InkWell(
-          onTap: () => AppDrawer.confirmAndSignOut(context),
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFFCA5A5)),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.logout_rounded, size: 15, color: Color(0xFFEF4444)),
-                SizedBox(width: 4),
-                Text(
-                  'Log Out',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFEF4444),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-
-        // Notification Icon
-        IconButton(
-          onPressed: onOpenNotifications,
-          icon: Stack(
-            clipBehavior: Clip.none,
+          // Right: Notification icon + Profile avatar
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+              IconButton(
+                onPressed: onOpenNotifications,
+                tooltip: 'Notifications',
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(9),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1E293B), size: 20),
+                    ),
+                    Positioned(
+                      right: 2,
+                      top: 2,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFC107),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1E293B), size: 20),
               ),
-              Positioned(
-                right: 2,
-                top: 2,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFFC107),
-                    shape: BoxShape.circle,
+              const SizedBox(width: 8),
+
+              // Profile avatar
+              InkWell(
+                onTap: onOpenProfile,
+                borderRadius: BorderRadius.circular(22),
+                child: Tooltip(
+                  message: '$organizationName • ${location.isNotEmpty ? location : 'Receiver Location'}',
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundColor: const Color(0xFFFFC107),
+                    child: Text(
+                      receiverName.isNotEmpty ? receiverName[0].toUpperCase() : 'R',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1E293B),
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-        ),
-
-        // Profile Icon
-        IconButton(
-          onPressed: onOpenProfile,
-          icon: CircleAvatar(
-            radius: 17,
-            backgroundColor: const Color(0xFFFEF3C7),
-            child: Text(
-              receiverName.isNotEmpty ? receiverName[0].toUpperCase() : 'R',
-              style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFD97706), fontSize: 13),
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -338,75 +289,6 @@ class ReceiverHomeTab extends StatelessWidget {
             label: const Text(
               'Browse Food',
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Four Key Metrics
-  // ---------------------------------------------------------------------------
-  Widget _buildStatsRow({
-    required int claimed,
-    required int confirmed,
-    required int distributed,
-    required int savedKg,
-  }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 600;
-        final cardWidth = isNarrow ? (constraints.maxWidth - 12) / 2 : (constraints.maxWidth - 36) / 4;
-
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            _buildStatCard('$claimed', 'Meals Claimed', Icons.volunteer_activism_rounded, const Color(0xFFD97706), cardWidth),
-            _buildStatCard('$confirmed', 'Pickup Confirmed', Icons.check_circle_outline_rounded, const Color(0xFF16A34A), cardWidth),
-            _buildStatCard('$distributed', 'Distributed', Icons.favorite_rounded, const Color(0xFFEF4444), cardWidth),
-            _buildStatCard('$savedKg kg', 'Food Saved', Icons.eco_rounded, const Color(0xFF059669), cardWidth),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildStatCard(String value, String label, IconData icon, Color color, double width) {
-    return Container(
-      width: width,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 20, color: color),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
-                ),
-                Text(
-                  label,
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
             ),
           ),
         ],
@@ -820,105 +702,38 @@ class ReceiverHomeTab extends StatelessWidget {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Nearby Food Map Preview Card
-  // ---------------------------------------------------------------------------
-  Widget _buildMapPreviewCard(BuildContext context, int count) {
+  Widget _buildErrorState() {
     return Container(
-      padding: const EdgeInsets.all(18),
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFFEF2F2),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0xFFFCA5A5)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.map_rounded, size: 18, color: Color(0xFFD97706)),
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Nearby Food Map',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
-                    ),
-                    Text(
-                      'Live locations of available commercial kitchens',
-                      style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
-                    ),
-                  ],
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => NearbyFoodMapPage(
-                        receiverLocation: latLng,
-                        receiverLocationName: location,
-                      ),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF1F5F9),
-                  foregroundColor: const Color(0xFF1E293B),
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                icon: const Icon(Icons.open_in_full_rounded, size: 14, color: Color(0xFFD97706)),
-                label: const Text('Expand Map', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-              ),
-            ],
-          ),
+          const Icon(Icons.cloud_off_rounded, size: 40, color: Color(0xFFEF4444)),
           const SizedBox(height: 12),
-          InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => NearbyFoodMapPage(
-                    receiverLocation: latLng,
-                    receiverLocationName: location,
-                  ),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              height: 140,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFCBD5E1)),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.map_outlined, size: 36, color: Color(0xFF94A3B8)),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Tap to explore $count available donation spots on live GPS map',
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
-                    ),
-                  ],
-                ),
-              ),
+          const Text(
+            'Unable to load nearby food listings.',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF991B1B)),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Check your network connection and try again.',
+            style: TextStyle(fontSize: 12.5, color: Color(0xFFB91C1C)),
+          ),
+          const SizedBox(height: 14),
+          ElevatedButton.icon(
+            onPressed: () => FoodRescueService.instance.initSupabaseSync('retry'),
+            icon: const Icon(Icons.refresh_rounded, size: 16),
+            label: const Text('Retry', style: TextStyle(fontWeight: FontWeight.w700)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
           ),
         ],

@@ -95,25 +95,28 @@ class _VolunteerTasksPageState extends State<VolunteerTasksPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Available Tasks',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF1E293B),
-                                letterSpacing: -0.3,
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Available Tasks',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF1E293B),
+                                  letterSpacing: -0.3,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Delivery opportunities connecting donors with local shelters',
-                              style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                            ),
-                          ],
+                              SizedBox(height: 2),
+                              Text(
+                                'Delivery opportunities connecting donors with local shelters',
+                                style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 12),
 
                         // Sort dropdown
                         Container(
