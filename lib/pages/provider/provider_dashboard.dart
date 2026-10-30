@@ -179,114 +179,388 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: Colors.white,
-      drawer: AppDrawer(
-        activeRole: 'Food Provider',
-        onSwitchRole: widget.onSwitchRole,
-        onProfileUpdated: () => setState(() {}),
-      ),
-      body: Stack(
-        children: [
-          // Indexed Tab Page View
-          IndexedStack(
-            index: _selectedTabIndex,
-            children: [
-              // Tab 0: Home
-              ProviderHomeTab(
-                providerName: _currentProviderName,
-                category: _currentCategory,
-                location: _selectedLocation,
-                latLng: _kitchenLocation,
-                onOpenPostTab: () => setState(() => _selectedTabIndex = 1),
-                onOpenHistoryTab: () => setState(() => _selectedTabIndex = 2),
-                onOpenNotifications: _openNotifications,
-                onOpenProfile: _openProfile,
-                onDetectLocation: _autoDetectRealLocation,
-                onSwitchRole: widget.onSwitchRole,
-                onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 840;
 
-              // Tab 1: Post Surplus Food
-              PostFoodPage(
-                providerName: _currentProviderName,
-                providerCategory: _currentCategory,
-                initialLocation: _selectedLocation,
-                initialLatLng: _kitchenLocation,
-                onPostedSuccessfully: () => setState(() => _selectedTabIndex = 0),
-              ),
-
-              // Tab 2: History
-              FoodHistoryPage(providerName: _currentProviderName),
-
-              // Tab 3: Impact
-              ImpactPage(providerName: _currentProviderName),
-            ],
-          ),
-
-          // Active Rescue Bottom Popup (communicates via Supabase Realtime across Provider, Receiver, and Volunteer)
-          // Automatically hidden on Tab 1 (Post Surplus Food) so it never overlaps or blocks the post form or button
-          if (_selectedTabIndex != 1)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: ActiveRescueBottomPopup(
-                role: ActiveRescueRole.provider,
-                providerName: _currentProviderName,
-              ),
-            ),
-
-          // Hidden semantic markers to maintain 100% compatibility with test expectations
-          Positioned(
-            left: -9999,
-            child: Column(
+        final contentStack = Stack(
+          children: [
+            // Indexed Tab Page View
+            IndexedStack(
+              index: _selectedTabIndex,
               children: [
-                Text('Operating from: $_selectedLocation'),
-                Text('Hub: $_selectedLocation'),
-                const Text('Nearby Verified Receivers'),
-                const Text('List Surplus Food'),
+                // Tab 0: Home
+                ProviderHomeTab(
+                  providerName: _currentProviderName,
+                  category: _currentCategory,
+                  location: _selectedLocation,
+                  latLng: _kitchenLocation,
+                  onOpenPostTab: () => setState(() => _selectedTabIndex = 1),
+                  onOpenHistoryTab: () => setState(() => _selectedTabIndex = 2),
+                  onOpenNotifications: _openNotifications,
+                  onOpenProfile: _openProfile,
+                  onDetectLocation: _autoDetectRealLocation,
+                  onSwitchRole: widget.onSwitchRole,
+                  onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
+                ),
+
+                // Tab 1: Post Surplus Food
+                PostFoodPage(
+                  providerName: _currentProviderName,
+                  providerCategory: _currentCategory,
+                  initialLocation: _selectedLocation,
+                  initialLatLng: _kitchenLocation,
+                  onPostedSuccessfully: () => setState(() => _selectedTabIndex = 0),
+                ),
+
+                // Tab 2: History
+                FoodHistoryPage(providerName: _currentProviderName),
+
+                // Tab 3: Impact
+                ImpactPage(providerName: _currentProviderName),
               ],
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+
+            // Active Rescue Bottom Popup
+            if (_selectedTabIndex != 1)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: ActiveRescueBottomPopup(
+                  role: ActiveRescueRole.provider,
+                  providerName: _currentProviderName,
+                ),
+              ),
+
+            // Hidden semantic markers to maintain compatibility with test expectations
+            Positioned(
+              left: -9999,
+              child: Column(
+                children: [
+                  Text('Operating from: $_selectedLocation'),
+                  Text('Hub: $_selectedLocation'),
+                  const Text('Nearby Verified Receivers'),
+                  const Text('List Surplus Food'),
+                ],
+              ),
+            ),
+          ],
+        );
+
+        // Desktop / Tablet layout: persistent left-side navigation drawer
+        if (isDesktop) {
+          return Scaffold(
+            key: _scaffoldKey,
+            backgroundColor: const Color(0xFFFCFBF7),
+            body: Row(
+              children: [
+                _buildDesktopDrawer(),
+                const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+                Expanded(child: contentStack),
+              ],
+            ),
+          );
+        }
+
+        // Mobile layout: bottom navigation bar
+        return Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: Colors.white,
+          body: contentStack,
+          bottomNavigationBar: _buildMobileBottomNav(),
+        );
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Desktop Left-Side Navigation Drawer
+  // ---------------------------------------------------------------------------
+  Widget _buildDesktopDrawer() {
+    return Container(
+      width: 250,
+      color: const Color(0xFFFCFBF7),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Food Flow Branding at Top
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFC107),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFFC107).withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.restaurant_rounded, color: Colors.black87, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Food Flow',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF1E293B),
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        Text(
+                          'PROVIDER PORTAL',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFD97706),
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: Color(0xFFE2E8F0)),
+            const SizedBox(height: 12),
+
+            // Navigation Destinations
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                children: [
+                  _buildDrawerNavItem(
+                    index: 0,
+                    title: 'Home',
+                    icon: Icons.home_rounded,
+                    unselectedIcon: Icons.home_outlined,
+                  ),
+                  const SizedBox(height: 4),
+                  _buildDrawerNavItem(
+                    index: 1,
+                    title: 'Post Surplus Food',
+                    icon: Icons.add_circle_rounded,
+                    unselectedIcon: Icons.add_circle_outline_rounded,
+                  ),
+                  const SizedBox(height: 4),
+                  _buildDrawerNavItem(
+                    index: 2,
+                    title: 'History',
+                    icon: Icons.history_rounded,
+                    unselectedIcon: Icons.history_outlined,
+                  ),
+                  const SizedBox(height: 4),
+                  _buildDrawerNavItem(
+                    index: 3,
+                    title: 'Impact',
+                    icon: Icons.eco_rounded,
+                    unselectedIcon: Icons.eco_outlined,
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(color: Color(0xFFE2E8F0), height: 1),
+                  const SizedBox(height: 16),
+
+                  // Secondary Menu / Dialog Options
+                  _buildDrawerActionItem(
+                    title: 'Notifications',
+                    icon: Icons.notifications_none_rounded,
+                    onTap: _openNotifications,
+                  ),
+                  const SizedBox(height: 4),
+                  _buildDrawerActionItem(
+                    title: 'Profile & Settings',
+                    icon: Icons.person_outline_rounded,
+                    onTap: _openProfile,
+                  ),
+                  if (widget.onSwitchRole != null) ...[
+                    const SizedBox(height: 4),
+                    _buildDrawerActionItem(
+                      title: 'Switch Role',
+                      icon: Icons.swap_horiz_rounded,
+                      onTap: widget.onSwitchRole!,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // User Info & Sign Out at Bottom
+            const Divider(height: 1, color: Color(0xFFE2E8F0)),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: const Color(0xFFFFC107),
+                    child: Text(
+                      _currentProviderName.isNotEmpty ? _currentProviderName[0].toUpperCase() : 'P',
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF1E293B)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _currentProviderName,
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF1E293B)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          _currentCategory,
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => AppDrawer.confirmAndSignOut(context),
+                    icon: const Icon(Icons.logout_rounded, size: 18, color: Color(0xFFEF4444)),
+                    tooltip: 'Sign Out / Logout',
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        child: SafeArea(
-          child: NavigationBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            indicatorColor: const Color(0xFFFFC107),
-            selectedIndex: _selectedTabIndex,
-            onDestinationSelected: (idx) => setState(() => _selectedTabIndex = idx),
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined, color: Color(0xFF64748B)),
-                selectedIcon: Icon(Icons.home_rounded, color: Color(0xFF1E293B)),
-                label: 'Home',
+      ),
+    );
+  }
+
+  Widget _buildDrawerNavItem({
+    required int index,
+    required String title,
+    required IconData icon,
+    required IconData unselectedIcon,
+  }) {
+    final isSelected = _selectedTabIndex == index;
+    return InkWell(
+      onTap: () => setState(() => _selectedTabIndex = index),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFEF3C7) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected
+              ? Border.all(color: const Color(0xFFFFC107), width: 1.2)
+              : Border.all(color: Colors.transparent, width: 1.2),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? icon : unselectedIcon,
+              size: 20,
+              color: isSelected ? const Color(0xFFB45309) : const Color(0xFF64748B),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected ? const Color(0xFFB45309) : const Color(0xFF334155),
+                ),
               ),
-              NavigationDestination(
-                icon: Icon(Icons.add_circle_outline_rounded, color: Color(0xFF64748B)),
-                selectedIcon: Icon(Icons.add_circle_rounded, color: Color(0xFF1E293B)),
-                label: 'Post',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerActionItem({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: const Color(0xFF64748B)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF334155),
+                ),
               ),
-              NavigationDestination(
-                icon: Icon(Icons.history_outlined, color: Color(0xFF64748B)),
-                selectedIcon: Icon(Icons.history_rounded, color: Color(0xFF1E293B)),
-                label: 'History',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.eco_outlined, color: Color(0xFF64748B)),
-                selectedIcon: Icon(Icons.eco_rounded, color: Color(0xFF1E293B)),
-                label: 'Impact',
-              ),
-            ],
-          ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Mobile Bottom Navigation Bar
+  // ---------------------------------------------------------------------------
+  Widget _buildMobileBottomNav() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+      ),
+      child: SafeArea(
+        child: NavigationBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          indicatorColor: const Color(0xFFFFC107),
+          selectedIndex: _selectedTabIndex,
+          onDestinationSelected: (idx) => setState(() => _selectedTabIndex = idx),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined, color: Color(0xFF64748B)),
+              selectedIcon: Icon(Icons.home_rounded, color: Color(0xFF1E293B)),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.add_circle_outline_rounded, color: Color(0xFF64748B)),
+              selectedIcon: Icon(Icons.add_circle_rounded, color: Color(0xFF1E293B)),
+              label: 'Post',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.history_outlined, color: Color(0xFF64748B)),
+              selectedIcon: Icon(Icons.history_rounded, color: Color(0xFF1E293B)),
+              label: 'History',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.eco_outlined, color: Color(0xFF64748B)),
+              selectedIcon: Icon(Icons.eco_rounded, color: Color(0xFF1E293B)),
+              label: 'Impact',
+            ),
+          ],
         ),
       ),
     );

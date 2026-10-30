@@ -515,6 +515,8 @@ class FoodRescueService extends ChangeNotifier {
 
   double get carbonDivertedKg => (totalMealsRescued * 1.85);
 
+  String? lastFetchError;
+
   /// Filter batches for a specific provider
   List<SurplusBatch> getBatchesForProvider(String providerName, {bool todayOnly = true}) {
     final cleanProvider = providerName.trim().toLowerCase();
@@ -522,15 +524,19 @@ class FoodRescueService extends ChangeNotifier {
     final currentUserId = SupabaseService.currentUser?.id;
 
     return _batches.where((b) {
-      final batchProvider = b.providerName.trim().toLowerCase();
-      final isIdMatch = currentUserId != null && b.providerId != null && b.providerId == currentUserId;
-      final isMatch = isIdMatch ||
-          batchProvider == cleanProvider ||
-          cleanProvider.contains(batchProvider) ||
-          batchProvider.contains(cleanProvider) ||
-          (cleanProvider.contains('grand palace') && batchProvider.contains('grand palace'));
+      if (b.id.startsWith('MOCK-')) return false;
 
-      if (!isMatch) return false;
+      final batchProvider = b.providerName.trim().toLowerCase();
+      bool belongs = false;
+      if (currentUserId != null && b.providerId != null && b.providerId!.isNotEmpty) {
+        belongs = (b.providerId == currentUserId);
+      } else if (cleanProvider.isNotEmpty) {
+        belongs = (batchProvider == cleanProvider ||
+            batchProvider.contains(cleanProvider) ||
+            cleanProvider.contains(batchProvider));
+      }
+
+      if (!belongs) return false;
 
       if (todayOnly) {
         final isSameDay = b.cookedAt.year == now.year &&
@@ -630,6 +636,7 @@ class FoodRescueService extends ChangeNotifier {
           .from('surplus_batches')
           .select()
           .order('created_at', ascending: false);
+      lastFetchError = null;
       if (data.isNotEmpty) {
         bool changed = false;
         for (final row in data) {
@@ -654,6 +661,8 @@ class FoodRescueService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('refreshBatches notice: $e');
+      lastFetchError = e.toString();
+      notifyListeners();
     }
   }
 
