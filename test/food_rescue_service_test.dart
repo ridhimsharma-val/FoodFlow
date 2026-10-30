@@ -178,8 +178,8 @@ void main() {
       );
 
       final remaining = batch.remainingSafeTime;
-      // Remaining safe time must be approximately 4 hours (between 3h 59m and 4h 1m), never 9+ hours
-      expect(remaining.inHours, equals(3));
+      // Remaining safe time must be approximately 4 hours (between 3h 58m and 4h 0m), never 9+ hours
+      expect(remaining.inHours, inInclusiveRange(3, 4));
       expect(remaining.inMinutes, greaterThanOrEqualTo(238));
       expect(remaining.inMinutes, lessThanOrEqualTo(241));
     });

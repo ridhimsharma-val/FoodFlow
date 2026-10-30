@@ -47,29 +47,29 @@ class _MyClaimsPageState extends State<MyClaimsPage> with SingleTickerProviderSt
       builder: (context, _) {
         final allBatches = FoodRescueService.instance.batches;
 
-        // Filter batches claimed by this receiver (or fallback sample claims if freshly testing)
+        // Filter batches claimed genuinely by this receiver
         final myClaims = allBatches.where((b) {
           if (b.status == BatchStatus.available) return false;
           if (b.claimedByNgoId != null && user != null && b.claimedByNgoId == user.id) return true;
-          if (b.claimedByNgo != null && b.claimedByNgo!.toLowerCase().contains(receiverOrg)) return true;
-          // Include active claimed batches for demonstration
-          return b.status == BatchStatus.claimed ||
-              b.status == BatchStatus.inTransitToPickup ||
-              b.status == BatchStatus.pickedUp ||
-              b.status == BatchStatus.delivered;
+          if (b.claimedByNgo != null && receiverOrg.isNotEmpty && b.claimedByNgo!.toLowerCase().contains(receiverOrg)) return true;
+          return false;
         }).toList();
 
         final activeClaims = myClaims
             .where((b) =>
                 b.status == BatchStatus.claimed ||
+                b.status == BatchStatus.volunteerAssigning ||
                 b.status == BatchStatus.inTransitToPickup ||
-                b.status == BatchStatus.pickedUp)
+                b.status == BatchStatus.arrivedAtPickup ||
+                b.status == BatchStatus.pickedUp ||
+                b.status == BatchStatus.inTransit ||
+                b.status == BatchStatus.arrivedAtReceiver)
             .toList();
 
         final completedClaims = myClaims.where((b) => b.status == BatchStatus.delivered).toList();
 
         final totalMealsClaimed = myClaims.fold<int>(0, (sum, b) => sum + b.quantityPortions);
-        final displayTotalMeals = totalMealsClaimed > 0 ? totalMealsClaimed : 120;
+        final displayTotalMeals = totalMealsClaimed;
 
         return Scaffold(
           backgroundColor: Colors.white,

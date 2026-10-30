@@ -66,21 +66,23 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
   int _getTimelineIndex(BatchStatus status) {
     switch (status) {
       case BatchStatus.available:
-        return 0; // Listed
+        return 0; // 1. Food Listed
       case BatchStatus.claimed:
-        return 1; // Claimed
+        return 1; // 2. Claimed by Receiver
       case BatchStatus.volunteerAssigning:
+        return 2; // 3. Volunteer Assignment
       case BatchStatus.inTransitToPickup:
-        return 2; // Volunteer Assigned
+        return 3; // 4. En Route to Pickup
       case BatchStatus.arrivedAtPickup:
-        return 3; // Going/Arrived to Pickup
+        return 4; // 5. Arrived at Pickup
       case BatchStatus.pickedUp:
-        return 4; // Picked Up
+        return 5; // 6. Pickup OTP Verified
       case BatchStatus.inTransit:
+        return 6; // 7. In Transit to Receiver
       case BatchStatus.arrivedAtReceiver:
-        return 5; // In Transit
+        return 7; // 8. Arrived at Receiver
       case BatchStatus.delivered:
-        return 6; // Delivered
+        return 8; // 9. Delivery OTP Verified
       case BatchStatus.expired:
       case BatchStatus.cancelled:
       case BatchStatus.reassigning:
@@ -116,6 +118,11 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) {
+          bool isTest = false;
+          try {
+            isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+          } catch (_) {}
+
           return AlertDialog(
             backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -123,9 +130,11 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
               children: [
                 Icon(Icons.vpn_key_rounded, color: Color(0xFFFFC107)),
                 SizedBox(width: 10),
-                Text(
-                  'Verify Pickup Handover',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                Expanded(
+                  child: Text(
+                    'Confirm Pickup — Enter OTP',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                  ),
                 ),
               ],
             ),
@@ -134,7 +143,7 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Enter the 4-digit Kitchen PIN provided by ${liveBatch.providerName} staff at the dock.',
+                  'Enter the 4-digit Kitchen PIN provided by ${liveBatch.providerName} staff at the dock during physical handover.',
                   style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
                 ),
                 const SizedBox(height: 16),
@@ -162,11 +171,13 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '(Provider Kitchen PIN: ${liveBatch.pickupOtp})',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontStyle: FontStyle.italic),
-                ),
+                if (isTest) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '(Test helper PIN: ${liveBatch.pickupOtp})',
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontStyle: FontStyle.italic),
+                  ),
+                ],
               ],
             ),
             actions: [
@@ -177,8 +188,8 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
               ElevatedButton(
                 onPressed: () {
                   final entered = _otpInputCtrl.text.trim();
-                  if (entered.isEmpty) {
-                    setModalState(() => _otpError = 'Please enter 4 digits');
+                  if (entered.isEmpty || entered.length != 4) {
+                    setModalState(() => _otpError = 'Please enter all 4 digits');
                     return;
                   }
                   final valid = FoodRescueService.instance.verifyPickupOtp(liveBatch.id, entered);
@@ -192,14 +203,14 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
                             const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text('Handover confirmed! Food loaded from ${liveBatch.providerName}.'),
+                              child: Text('Pickup Confirmed: Food successfully collected from ${liveBatch.providerName}.'),
                             ),
                           ],
                         ),
                       ),
                     );
                   } else {
-                    setModalState(() => _otpError = 'Incorrect PIN. Check with kitchen staff.');
+                    setModalState(() => _otpError = 'Incorrect Pickup OTP. Ask kitchen staff at dock.');
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -224,6 +235,11 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) {
+          bool isTest = false;
+          try {
+            isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+          } catch (_) {}
+
           return AlertDialog(
             backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -231,9 +247,11 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
               children: [
                 Icon(Icons.verified_rounded, color: Color(0xFF10B981)),
                 SizedBox(width: 10),
-                Text(
-                  'Confirm Final Delivery',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                Expanded(
+                  child: Text(
+                    'Confirm Delivery — Enter OTP',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                  ),
                 ),
               ],
             ),
@@ -242,7 +260,7 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Ask ${liveBatch.claimedByNgo ?? "Shelter"} representative for the 4-digit Delivery OTP.',
+                  'Ask ${liveBatch.claimedByNgo ?? "Shelter representative"} for the 4-digit Delivery OTP upon handover.',
                   style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
                 ),
                 const SizedBox(height: 16),
@@ -270,11 +288,13 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '(Receiver Shelter OTP: ${liveBatch.deliveryOtp})',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontStyle: FontStyle.italic),
-                ),
+                if (isTest) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '(Test helper OTP: ${liveBatch.deliveryOtp})',
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontStyle: FontStyle.italic),
+                  ),
+                ],
               ],
             ),
             actions: [
@@ -285,8 +305,8 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
               ElevatedButton(
                 onPressed: () {
                   final entered = _otpInputCtrl.text.trim();
-                  if (entered.isEmpty) {
-                    setModalState(() => _otpError = 'Please enter 4 digits');
+                  if (entered.isEmpty || entered.length != 4) {
+                    setModalState(() => _otpError = 'Please enter all 4 digits');
                     return;
                   }
                   final valid = FoodRescueService.instance.verifyDeliveryOtp(liveBatch.id, entered);
@@ -294,7 +314,7 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
                     Navigator.pop(ctx);
                     _showCelebrationDialog(liveBatch);
                   } else {
-                    setModalState(() => _otpError = 'Incorrect OTP. Check with receiver staff.');
+                    setModalState(() => _otpError = 'Incorrect Delivery OTP. Verify with shelter staff.');
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -333,15 +353,51 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
             ),
             const SizedBox(height: 18),
             const Text(
-              'Rescue Completed! 🎉',
-              style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
+              'Delivery Successfully Completed!',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            Text(
-              '${batch.quantityPortions} meals safely transported from ${batch.providerName} to ${batch.claimedByNgo ?? "Shelter"}. Zero food wasted!',
-              style: const TextStyle(fontSize: 13.5, color: Color(0xFF64748B), height: 1.45),
+            const Text(
+              'Food has been handed over and verified by the Receiver.',
+              style: TextStyle(fontSize: 13.5, color: Color(0xFF64748B), height: 1.45),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Meals Rescued', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                      Text('${batch.quantityPortions} portions', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('CO₂ Avoided', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                      Text('${(batch.quantityPortions * 1.85).toStringAsFixed(1)} kg', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF16A34A))),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Volunteer Earnings', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                      Text('₹${(batch.quantityPortions * 1.5 + 40).round()}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF15803D))),
+                    ],
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -661,16 +717,30 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
     );
   }
 
-  // COMPACT 7-STAGE STATUS TIMELINE
+  // COMPLETE 9-STAGE RESCUE LIFECYCLE TIMELINE
   Widget _buildStatusTimeline(int activeIndex) {
     final stages = [
       'Listed',
       'Claimed',
-      'Assigned',
-      'Pickup',
+      'Assigning',
+      'En Route',
+      'At Pickup',
       'Picked Up',
       'In Transit',
+      'At Shelter',
       'Delivered',
+    ];
+
+    final stageFullLabels = [
+      '1. Food Listed',
+      '2. Claimed by Receiver',
+      '3. Volunteer Assignment',
+      '4. En Route to Pickup',
+      '5. Arrived at Pickup',
+      '6. Pickup OTP Verified',
+      '7. In Transit to Receiver',
+      '8. Arrived at Receiver',
+      '9. Delivery OTP Verified',
     ];
 
     return Container(
@@ -693,93 +763,119 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Rescue Lifecycle',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(6),
-                ),
+              const Expanded(
                 child: Text(
-                  stages[activeIndex.clamp(0, stages.length - 1)],
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFB45309)),
+                  'Rescue Lifecycle Progress',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: activeIndex == 8 ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: activeIndex == 8 ? const Color(0xFF86EFAC) : const Color(0xFFFFC107),
+                    ),
+                  ),
+                  child: Text(
+                    stageFullLabels[activeIndex.clamp(0, stageFullLabels.length - 1)],
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: activeIndex == 8 ? const Color(0xFF166534) : const Color(0xFFB45309),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: List.generate(stages.length, (index) {
-              final isDone = index < activeIndex;
-              final isCurrent = index == activeIndex;
-              return Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 420;
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: isNarrow ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(stages.length, (index) {
+                      final isDone = index < activeIndex;
+                      final isCurrent = index == activeIndex;
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 22,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isDone
-                                  ? const Color(0xFF10B981)
-                                  : isCurrent
-                                      ? const Color(0xFFFFC107)
-                                      : const Color(0xFFE2E8F0),
-                              border: isCurrent
-                                  ? Border.all(color: const Color(0xFFB45309), width: 2)
-                                  : null,
-                            ),
-                            child: Center(
-                              child: isDone
-                                  ? const Icon(Icons.check, size: 13, color: Colors.white)
-                                  : isCurrent
-                                      ? Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: const BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: Color(0xFF1E293B),
-                                          ),
-                                        )
-                                      : const SizedBox(),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            stages[index],
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
-                              color: isCurrent
-                                  ? const Color(0xFF1E293B)
-                                  : isDone
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDone
                                       ? const Color(0xFF10B981)
-                                      : const Color(0xFF94A3B8),
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                                      : isCurrent
+                                          ? const Color(0xFFFFC107)
+                                          : const Color(0xFFF1F5F9),
+                                  border: isCurrent
+                                      ? Border.all(color: const Color(0xFFB45309), width: 2)
+                                      : Border.all(color: isDone ? const Color(0xFF10B981) : const Color(0xFFE2E8F0)),
+                                ),
+                                child: Center(
+                                  child: isDone
+                                      ? const Icon(Icons.check, size: 12, color: Colors.white)
+                                      : isCurrent
+                                          ? Container(
+                                              width: 7,
+                                              height: 7,
+                                              decoration: const BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Color(0xFF1E293B),
+                                              ),
+                                            )
+                                          : Text(
+                                              '${index + 1}',
+                                              style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8)),
+                                            ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                stages[index],
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
+                                  color: isCurrent
+                                      ? const Color(0xFF1E293B)
+                                      : isDone
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFF94A3B8),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
+                          if (index < stages.length - 1)
+                            Container(
+                              height: 2.5,
+                              width: isNarrow ? 12 : ((constraints.maxWidth - (22 * 9) - 10) / 8).clamp(8.0, 24.0),
+                              margin: const EdgeInsets.only(bottom: 16),
+                              color: isDone ? const Color(0xFF10B981) : const Color(0xFFE2E8F0),
+                            ),
                         ],
-                      ),
-                    ),
-                    if (index < stages.length - 1)
-                      Container(
-                        height: 2.5,
-                        width: 10,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        color: isDone ? const Color(0xFF10B981) : const Color(0xFFE2E8F0),
-                      ),
-                  ],
+                      );
+                    }),
+                  ),
                 ),
               );
-            }),
+            },
           ),
         ],
       ),
@@ -1078,28 +1174,69 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
 
           // Primary Dynamic Action
           if (status == BatchStatus.inTransitToPickup || status == BatchStatus.volunteerAssigning) ...[
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // Jump simulated location to kitchen dock
-                  FoodRescueService.instance.updateTaskDeliveryStatus(batch.id, BatchStatus.arrivedAtPickup);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Arrived at kitchen dock! Ask staff for Kitchen PIN.')),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFC107),
-                  foregroundColor: const Color(0xFF1E293B),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Navigating to pickup: ${batch.pickupAddress}')),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF1E293B),
+                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.directions_rounded, size: 18),
+                    label: const Text('Navigate to Pickup', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                  ),
                 ),
-                icon: const Icon(Icons.navigation_rounded, size: 18),
-                label: const Text('Arrived at Pickup Dock', style: TextStyle(fontWeight: FontWeight.w800)),
-              ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      FoodRescueService.instance.updateTaskDeliveryStatus(batch.id, BatchStatus.arrivedAtPickup);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Arrived at kitchen dock! Ask staff for Kitchen PIN.')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFC107),
+                      foregroundColor: const Color(0xFF1E293B),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.navigation_rounded, size: 18),
+                    label: const Text('Arrived at Pickup Dock', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                  ),
+                ),
+              ],
             ),
           ] else if (status == BatchStatus.arrivedAtPickup) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Ask Provider staff for the 4-digit pickup OTP to confirm food handover.',
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             SizedBox(
               width: double.infinity,
               height: 46,
@@ -1112,19 +1249,39 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
                   elevation: 0,
                 ),
                 icon: const Icon(Icons.vpn_key_rounded, size: 18),
-                label: const Text('Confirm Pickup (Enter PIN)', style: TextStyle(fontWeight: FontWeight.w800)),
+                label: const Text('Confirm Pickup — Enter OTP', style: TextStyle(fontWeight: FontWeight.w800)),
               ),
             ),
-          ] else if (status == BatchStatus.pickedUp || status == BatchStatus.inTransit) ...[
+          ] else if (status == BatchStatus.pickedUp) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFECFDF5),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Pickup Confirmed: Food successfully collected from the Provider.',
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF065F46)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             SizedBox(
               width: double.infinity,
               height: 46,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  // Jump simulated location to receiver
-                  FoodRescueService.instance.updateTaskDeliveryStatus(batch.id, BatchStatus.arrivedAtReceiver);
+                  FoodRescueService.instance.updateTaskDeliveryStatus(batch.id, BatchStatus.inTransit);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Arrived at destination shelter! Ask receiver for Delivery OTP.')),
+                    const SnackBar(content: Text('Starting transit to destination shelter!')),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -1133,11 +1290,74 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
-                icon: const Icon(Icons.near_me_rounded, size: 18),
-                label: const Text('Arrived at Destination Shelter', style: TextStyle(fontWeight: FontWeight.w800)),
+                icon: const Icon(Icons.local_shipping_rounded, size: 18),
+                label: const Text('Continue to Delivery', style: TextStyle(fontWeight: FontWeight.w800)),
               ),
             ),
+          ] else if (status == BatchStatus.inTransit) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Navigating to receiver: ${batch.receiverDropoffAddress ?? "Destination Shelter"}')),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF1E293B),
+                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.directions_rounded, size: 18),
+                    label: const Text('Navigate to Receiver', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      FoodRescueService.instance.updateTaskDeliveryStatus(batch.id, BatchStatus.arrivedAtReceiver);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Arrived at destination shelter! Ask receiver for Delivery OTP.')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.near_me_rounded, size: 18),
+                    label: const Text('Mark Arrived at Receiver', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                  ),
+                ),
+              ],
+            ),
           ] else if (status == BatchStatus.arrivedAtReceiver) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Ask Receiver for the 4-digit delivery OTP to complete handover.',
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             SizedBox(
               width: double.infinity,
               height: 46,
@@ -1150,25 +1370,41 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
                   elevation: 0,
                 ),
                 icon: const Icon(Icons.verified_rounded, size: 18),
-                label: const Text('Confirm Handover (Enter OTP)', style: TextStyle(fontWeight: FontWeight.w800)),
+                label: const Text('Confirm Delivery — Enter OTP', style: TextStyle(fontWeight: FontWeight.w800)),
               ),
             ),
           ] else if (status == BatchStatus.delivered) ...[
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.all(16),
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFFDCFCE7),
+                color: const Color(0xFFECFDF5),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
                 children: [
-                  Icon(Icons.check_circle_rounded, color: Color(0xFF166534), size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Delivery Completed Successfully ✓',
-                    style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF166534)),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 22),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Delivery Successfully Completed!',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF065F46)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: _buildMetricItem('${batch.quantityPortions}', 'Portions', Icons.restaurant_rounded)),
+                      Expanded(child: _buildMetricItem('${(batch.quantityPortions * 0.4).toStringAsFixed(1)} kg', 'CO₂ Saved', Icons.eco_rounded)),
+                      Expanded(child: _buildMetricItem('₹${(batch.quantityPortions * 8).toStringAsFixed(0)}', 'Payout', Icons.account_balance_wallet_rounded)),
+                    ],
                   ),
                 ],
               ),
@@ -1176,6 +1412,17 @@ class _SharedRescueTrackingPageState extends State<SharedRescueTrackingPage> {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildMetricItem(String value, String label, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFF059669)),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF1E293B))),
+        Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+      ],
     );
   }
 

@@ -481,5 +481,87 @@ void main() {
       final acceptedBatch = SurplusBatch.fromJson(acceptedJson);
       expect(acceptedBatch.isVolunteerAcceptedAndActive, isTrue);
     });
+
+    test('End-to-End 9-stage rescue lifecycle with dual-OTP verification synchronizes across Provider, Receiver, and Volunteer', () async {
+      // 1. Stage 1: available (Food Listed)
+      final batch = service.listNewBatch(
+        providerName: 'Taj Connemara Kitchen',
+        providerCategory: 'Hotel & Banquets',
+        title: '80 Portions South Indian Meals',
+        category: 'Cooked Meals & Thalis',
+        quantityPortions: 80,
+        dietaryType: 'Pure Veg',
+        temperatureCelsius: 64.0,
+        packagingType: 'Foil Trays',
+        pickupAddress: 'Binny Road, Chennai',
+        location: const LatLng(13.0600, 80.2500),
+      );
+      expect(batch.status, equals(BatchStatus.available));
+
+      // 2. Stage 2: claimed (Claimed by Receiver)
+      service.claimBatch(batchId: batch.id, ngoName: 'Helping Hands Foundation');
+      expect(batch.status, equals(BatchStatus.claimed));
+
+      // 3. Stage 3: volunteerAssigning (Volunteer Assignment)
+      service.startVolunteerAssignment(
+        batchId: batch.id,
+        volunteerId: 'VOL-TN-101',
+        volunteerName: 'Karthik Raja',
+        volunteerPhone: '+91 98888 77777',
+        autoFinalize: false,
+      );
+      expect(batch.status, equals(BatchStatus.volunteerAssigning));
+
+      // 4. Stage 4: inTransitToPickup (Volunteer Assigned / En Route to Pickup)
+      service.finalizeVolunteerAssignment(batch.id);
+      expect(batch.status, equals(BatchStatus.inTransitToPickup));
+      expect(batch.assignedCourierName, equals('Karthik Raja'));
+
+      // 5. Stage 5: arrivedAtPickup (Arrived at Pickup)
+      service.updateTaskDeliveryStatus(batch.id, BatchStatus.arrivedAtPickup);
+      expect(batch.status, equals(BatchStatus.arrivedAtPickup));
+
+      // 6. Stage 6: Pickup OTP Verification
+      // Test incorrect OTP is rejected and does not advance status
+      final wrongPickup = service.verifyPickupOtp(batch.id, '9999');
+      expect(wrongPickup, isFalse);
+      expect(batch.status, equals(BatchStatus.arrivedAtPickup));
+
+      // Test correct OTP is accepted and advances status to pickedUp
+      final correctPickup = service.verifyPickupOtp(batch.id, batch.pickupOtp);
+      expect(correctPickup, isTrue);
+      expect(batch.status, equals(BatchStatus.pickedUp));
+      expect(batch.pickedUpAt, isNotNull);
+
+      // Verify Provider & Receiver synchronized state during pickedUp phase
+      final providerBatch = service.getActiveRescueForProvider('Taj Connemara Kitchen')!;
+      final receiverBatch = service.getActiveRescueForReceiver('Helping Hands Foundation')!;
+      expect(providerBatch.status, equals(BatchStatus.pickedUp));
+      expect(receiverBatch.status, equals(BatchStatus.pickedUp));
+
+      // 7. Stage 7: inTransit (Volunteer triggers "Continue to Delivery")
+      service.updateTaskDeliveryStatus(batch.id, BatchStatus.inTransit);
+      expect(batch.status, equals(BatchStatus.inTransit));
+
+      // 8. Stage 8: arrivedAtReceiver (Arrived at Receiver)
+      service.updateTaskDeliveryStatus(batch.id, BatchStatus.arrivedAtReceiver);
+      expect(batch.status, equals(BatchStatus.arrivedAtReceiver));
+
+      // 9. Stage 9: Delivery OTP Verification
+      // Test incorrect OTP is rejected and does not advance status
+      final wrongDelivery = service.verifyDeliveryOtp(batch.id, '0000');
+      expect(wrongDelivery, isFalse);
+      expect(batch.status, equals(BatchStatus.arrivedAtReceiver));
+
+      // Test correct delivery OTP completes rescue
+      final correctDelivery = service.verifyDeliveryOtp(batch.id, batch.deliveryOtp);
+      expect(correctDelivery, isTrue);
+      expect(batch.status, equals(BatchStatus.delivered));
+      expect(batch.deliveredAt, isNotNull);
+
+      // Verify all 3 views confirm completion
+      expect(service.getActiveRescueForProvider('Taj Connemara Kitchen')!.status, equals(BatchStatus.delivered));
+      expect(service.getActiveRescueForReceiver('Helping Hands Foundation')!.status, equals(BatchStatus.delivered));
+    });
   });
 }

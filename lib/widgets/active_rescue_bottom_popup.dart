@@ -478,12 +478,13 @@ class _ActiveRescueBottomPopupState extends State<ActiveRescueBottomPopup>
       case BatchStatus.inTransitToPickup:
         return isProvider ? 'En Route to Dock' : 'Going to Pickup';
       case BatchStatus.arrivedAtPickup:
-        return 'Arrived at Dock';
+        return isProvider ? 'Arrived at Dock' : 'At Provider Dock';
       case BatchStatus.pickedUp:
+        return 'Picked Up';
       case BatchStatus.inTransit:
         return 'In Transit';
       case BatchStatus.arrivedAtReceiver:
-        return 'At Shelter';
+        return isProvider ? 'Arrived at Receiver' : 'Arrived at Shelter';
       case BatchStatus.delivered:
         return 'Delivered ✓';
       case BatchStatus.claimed:
@@ -502,12 +503,17 @@ class _ActiveRescueBottomPopupState extends State<ActiveRescueBottomPopup>
       case BatchStatus.arrivedAtPickup:
         return isProvider ? 'Arrived at your dock! Share PIN' : 'At kitchen dock verifying pickup';
       case BatchStatus.pickedUp:
+        return isProvider
+            ? 'Food picked up • Preparing for transit'
+            : 'Food Picked Up — Volunteer Is on the Way';
       case BatchStatus.inTransit:
-        return isProvider ? 'Food picked up • Transporting to shelter' : 'En route to your shelter facility';
+        return isProvider
+            ? 'Food in transit to destination shelter'
+            : 'En route to your shelter facility';
       case BatchStatus.arrivedAtReceiver:
         return isProvider ? 'Arrived at destination shelter' : 'Arrived at your gate! Share Delivery OTP';
       case BatchStatus.delivered:
-        return 'Food safely delivered and distributed';
+        return isProvider ? 'Food safely delivered and distributed' : 'Food Successfully Delivered';
       case BatchStatus.claimed:
         return 'Waiting for volunteer courier dispatch';
       default:

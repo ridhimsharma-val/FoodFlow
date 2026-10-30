@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/food_rescue_service.dart';
-import '../../services/impact_calculation_service.dart';
+import '../../services/supabase_service.dart';
 
 class VolunteerImpactPage extends StatelessWidget {
   const VolunteerImpactPage({super.key});
@@ -10,14 +10,16 @@ class VolunteerImpactPage extends StatelessWidget {
     return ListenableBuilder(
       listenable: FoodRescueService.instance,
       builder: (context, _) {
+        final user = SupabaseService.currentUser;
         final allBatches = FoodRescueService.instance.batches;
-        final metrics = ImpactCalculationService.calculate(allBatches);
+        final myDelivered = allBatches.where((b) =>
+            b.status == BatchStatus.delivered && (user == null || b.assignedCourierId == user.id)).toList();
 
-        // Volunteer delivery specific metric values
-        final deliveredMeals = metrics.mealsRedistributed > 0 ? metrics.mealsRedistributed : 1240;
+        // Volunteer delivery specific metric values calculated from genuine delivered rescues
+        final deliveredMeals = myDelivered.fold<int>(0, (sum, b) => sum + b.quantityPortions);
         final foodRescuedKg = (deliveredMeals * 0.5).round();
-        final peopleServed = (deliveredMeals * 0.25).round();
-        const deliveryDistanceKm = 86;
+        final peopleServed = (deliveredMeals * 0.75).round();
+        final deliveryDistanceKm = (myDelivered.fold<double>(0.0, (sum, b) => sum + (b.distanceRemainingKm ?? 3.5))).round();
 
         return Scaffold(
           backgroundColor: Colors.white,

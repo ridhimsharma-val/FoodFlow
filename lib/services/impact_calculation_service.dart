@@ -17,9 +17,8 @@ class ProviderImpactMetrics {
 /// Centralized service calculating environmental and social impact metrics
 /// from actual provider donation batches.
 class ImpactCalculationService {
-  /// Baseline offsets to represent provider's historical journey while seamlessly
-  /// accumulating newly verified live batches.
-  static const int baselineMeals = 420;
+  /// Baseline meals offset (defaults to 0 so fresh accounts start with genuine metrics).
+  static int baselineMeals = 0;
 
   /// Transparent conversion factors:
   /// - 1 average meal ≈ 0.5 kg of food saved

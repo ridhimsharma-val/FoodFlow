@@ -287,5 +287,51 @@ void main() {
       expect(find.text('Arrived at Pickup Dock'), findsOneWidget);
       expect(find.textContaining('Simulat'), findsOneWidget);
     });
+
+    testWidgets('SharedRescueTrackingPage displays Pickup Confirmed banner and Continue to Delivery when pickedUp', (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      FoodRescueService.instance.finalizeVolunteerAssignment(testBatch.id);
+      FoodRescueService.instance.updateTaskDeliveryStatus(testBatch.id, BatchStatus.arrivedAtPickup);
+      FoodRescueService.instance.verifyPickupOtp(testBatch.id, testBatch.pickupOtp);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SharedRescueTrackingPage(
+            batch: testBatch,
+            role: RescueTrackingRole.volunteer,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.textContaining('Pickup Confirmed'), findsOneWidget);
+      expect(find.text('Continue to Delivery'), findsOneWidget);
+    });
+
+    testWidgets('SharedRescueTrackingPage displays completion summary when delivered', (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      FoodRescueService.instance.finalizeVolunteerAssignment(testBatch.id);
+      FoodRescueService.instance.updateTaskDeliveryStatus(testBatch.id, BatchStatus.arrivedAtReceiver);
+      FoodRescueService.instance.verifyDeliveryOtp(testBatch.id, testBatch.deliveryOtp);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SharedRescueTrackingPage(
+            batch: testBatch,
+            role: RescueTrackingRole.volunteer,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Delivery Successfully Completed!'), findsOneWidget);
+      expect(find.text('Portions'), findsOneWidget);
+    });
   });
 }

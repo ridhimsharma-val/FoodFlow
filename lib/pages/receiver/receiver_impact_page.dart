@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/food_rescue_service.dart';
 import '../../services/impact_calculation_service.dart';
+import '../../services/supabase_service.dart';
 
 class ReceiverImpactPage extends StatelessWidget {
   const ReceiverImpactPage({super.key});
@@ -10,8 +11,25 @@ class ReceiverImpactPage extends StatelessWidget {
     return ListenableBuilder(
       listenable: FoodRescueService.instance,
       builder: (context, _) {
+        final user = SupabaseService.currentUser;
+        final meta = user?.userMetadata ?? {};
+        final receiverOrg = (meta['organization_name'] ??
+                meta['full_name'] ??
+                meta['name'] ??
+                (user?.email?.split('@').first ?? ''))
+            .toString()
+            .trim()
+            .toLowerCase();
+
         final allBatches = FoodRescueService.instance.batches;
-        final metrics = ImpactCalculationService.calculate(allBatches);
+        final myBatches = allBatches.where((b) {
+          if (b.status == BatchStatus.available) return false;
+          if (b.claimedByNgoId != null && user != null && b.claimedByNgoId == user.id) return true;
+          if (b.claimedByNgo != null && receiverOrg.isNotEmpty && b.claimedByNgo!.toLowerCase().contains(receiverOrg)) return true;
+          return false;
+        }).toList();
+
+        final metrics = ImpactCalculationService.calculate(myBatches);
 
         return Scaffold(
           backgroundColor: Colors.white,
