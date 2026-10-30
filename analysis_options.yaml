@@ -16,6 +16,8 @@ analyzer:
     - ios/**
     - web/**
     - macos/**
+    - windows/**
+    - linux/**
   errors:
     deprecated_member_use: ignore
     avoid_web_libraries_in_flutter: ignore
