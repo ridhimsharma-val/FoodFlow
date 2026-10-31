@@ -13,6 +13,7 @@ import 'services/consent_service.dart';
 import 'services/supabase_service.dart';
 import 'services/location_service.dart';
 import 'widgets/app_drawer.dart';
+import 'widgets/brand_logo.dart';
 import 'widgets/six_digit_otp_input.dart';
 import 'widgets/terms_and_conditions_dialog.dart';
 
@@ -165,88 +166,18 @@ class DashedRoundedRectanglePainter extends CustomPainter {
   }
 }
 
-/// The App Logo Box with dashed border and tray/downward-arrow icon
+/// The App Logo Box - displays the official Food Flow Wordmark logo
 class FoodFlowLogoBox extends StatelessWidget {
-  const FoodFlowLogoBox({super.key});
+  final double? width;
+  final double? height;
+
+  const FoodFlowLogoBox({super.key, this.width, this.height});
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: const DashedRoundedRectanglePainter(
-        color: AppColors.borderDashedLogo,
-        radius: 12,
-        strokeWidth: 1.5,
-      ),
-      child: Container(
-        width: 170,
-        height: 88,
-        decoration: BoxDecoration(
-          color: AppColors.logoBoxBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Food donation tray icon with downward arrow
-            SizedBox(
-              width: 32,
-              height: 30,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned(
-                    top: 2,
-                    child: Container(
-                      width: 28,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: AppColors.textLogo,
-                          width: 2,
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(5),
-                          bottomRight: Radius.circular(5),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 0,
-                    child: Container(
-                      width: 32,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: AppColors.textLogo,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const Positioned(
-                    top: 7,
-                    child: Icon(
-                      Icons.arrow_downward_rounded,
-                      size: 14,
-                      color: AppColors.textLogo,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'APP LOGO',
-              style: TextStyle(
-                color: AppColors.textLogo,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.9,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return FoodFlowWordmark(
+      width: width ?? 140,
+      height: height ?? 110,
     );
   }
 }

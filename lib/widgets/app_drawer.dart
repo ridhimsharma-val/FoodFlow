@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/location_service.dart';
 import '../services/supabase_service.dart';
+import 'brand_logo.dart';
 
 class AppDrawer extends StatefulWidget {
   final String activeRole;
@@ -835,14 +836,10 @@ class _AppDrawerState extends State<AppDrawer> {
   }
 
   Widget _buildAvatarFallback(String name) {
-    final initials = name.trim().split(' ').where((w) => w.isNotEmpty).map((w) => w[0]).take(2).join().toUpperCase();
-    return CircleAvatar(
+    return const CircleAvatar(
       radius: 26,
-      backgroundColor: const Color(0xFFFBBF24),
-      child: Text(
-        initials.isNotEmpty ? initials : 'FF',
-        style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.black87, fontSize: 16),
-      ),
+      backgroundColor: Color(0xFFFEF9E6),
+      child: FoodFlowIcon(size: 52),
     );
   }
 }

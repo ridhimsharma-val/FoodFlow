@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/location_service.dart';
 import '../services/supabase_service.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/brand_logo.dart';
 import 'provider/provider_dashboard.dart';
 import 'receiver/receiver_dashboard.dart';
 import 'volunteer/volunteer_dashboard.dart';
@@ -403,21 +404,7 @@ class _DashboardPageState extends State<DashboardPage> {
         titleSpacing: 16,
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFBBF24),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Text(
-                'FF',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
+            const FoodFlowIcon(size: 32),
             const SizedBox(width: 8),
             const Column(
               crossAxisAlignment: CrossAxisAlignment.start,

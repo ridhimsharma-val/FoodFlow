@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import '../../services/food_rescue_service.dart';
 import 'live_claim_page.dart';
+import '../../widgets/brand_logo.dart';
 
 class ProviderHomeTab extends StatelessWidget {
   final String providerName;
@@ -140,22 +141,7 @@ class ProviderHomeTab extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                 ],
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFC107),
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFFC107).withValues(alpha: 0.35),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.restaurant_rounded, color: Colors.black87, size: 20),
-                ),
+                const FoodFlowIcon(size: 38),
                 const SizedBox(width: 8),
                 const Flexible(
                   child: Column(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/supabase_service.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/brand_logo.dart';
 
 class ChatMessage {
   final String text;
@@ -222,21 +223,7 @@ class _SupportPageState extends State<SupportPage> {
       titleSpacing: 16,
       title: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFBBF24),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: const Text(
-              'FF',
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 13,
-                color: Colors.black87,
-              ),
-            ),
-          ),
+          const FoodFlowIcon(size: 32),
           const SizedBox(width: 10),
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,

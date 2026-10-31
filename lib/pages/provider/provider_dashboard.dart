@@ -4,6 +4,7 @@ import '../../services/food_rescue_service.dart';
 import '../../services/location_service.dart';
 import '../../services/supabase_service.dart';
 import '../../widgets/app_drawer.dart';
+import '../../widgets/brand_logo.dart';
 import '../../widgets/active_rescue_bottom_popup.dart';
 import 'provider_home_tab.dart';
 import 'post_food_page.dart';
@@ -331,22 +332,7 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
               child: Row(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFC107),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFFC107).withValues(alpha: 0.35),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.restaurant_rounded, color: Colors.black87, size: 22),
-                  ),
+                  const FoodFlowIcon(size: 40),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Column(

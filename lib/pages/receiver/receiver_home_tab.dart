@@ -4,6 +4,7 @@ import '../../services/food_rescue_service.dart';
 import '../../services/matching_service.dart';
 import 'food_details_dialog.dart';
 import 'claim_confirmation_dialog.dart';
+import '../../widgets/brand_logo.dart';
 
 class ReceiverHomeTab extends StatelessWidget {
   final String receiverName;
@@ -116,22 +117,7 @@ class ReceiverHomeTab extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFC107),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFFC107).withValues(alpha: 0.35),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.restaurant_rounded, color: Colors.black87, size: 22),
-              ),
+              const FoodFlowIcon(size: 42),
               const SizedBox(width: 12),
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../login.dart';
 import '../services/consent_service.dart';
+import 'brand_logo.dart';
 
 /// Supported legal document types
 enum LegalDocumentType {
@@ -263,14 +264,21 @@ class _TermsAndConditionsDialogState extends State<TermsAndConditionsDialog> {
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: AppColors.borderDashedLogo, width: 0.8),
                       ),
-                      child: const Text(
-                        'Food Flow',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textLogo,
-                          letterSpacing: 0.4,
-                        ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FoodFlowIcon(size: 14),
+                          SizedBox(width: 5),
+                          Text(
+                            'Food Flow',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textLogo,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 8),

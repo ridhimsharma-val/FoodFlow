@@ -10,6 +10,7 @@ import 'services/auth_service.dart';
 import 'services/consent_service.dart';
 import 'services/supabase_service.dart';
 import 'widgets/app_drawer.dart';
+import 'widgets/brand_logo.dart';
 import 'widgets/terms_and_conditions_dialog.dart';
 
 void main() async {
@@ -373,9 +374,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Dashed App Logo
-                    const FoodFlowLogoBox(),
-                    const SizedBox(height: 24),
+                    // Food Flow Word Mark Logo
+                    const FoodFlowWordmark(
+                      width: 150,
+                      height: 120,
+                    ),
+                    const SizedBox(height: 20),
 
                     // Title
                     const Text(
