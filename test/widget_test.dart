@@ -6,9 +6,12 @@ import 'package:food_flow/pages/provider/provider_signup.dart';
 import 'package:food_flow/pages/receiver/receiver_signup.dart';
 import 'package:food_flow/pages/volunteer/volunteer_signup.dart';
 
+import 'package:food_flow/services/consent_service.dart';
+
 void main() {
   testWidgets('End-to-end navigation across all 3 role signup pages with improved UX',
       (WidgetTester tester) async {
+    FoodFlowConsentService.instance.resetForTesting(accepted: true);
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);

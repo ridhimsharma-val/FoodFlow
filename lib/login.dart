@@ -9,10 +9,12 @@ import 'pages/receiver/receiver_signup.dart';
 import 'pages/volunteer/volunteer_signup.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/auth_service.dart';
+import 'services/consent_service.dart';
 import 'services/supabase_service.dart';
 import 'services/location_service.dart';
 import 'widgets/app_drawer.dart';
 import 'widgets/six_digit_otp_input.dart';
+import 'widgets/terms_and_conditions_dialog.dart';
 
 // ============================================================================
 // 1. BRAND COLORS & CONSTANTS
@@ -840,7 +842,18 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<bool> _ensureConsentAccepted() async {
+    if (FoodFlowConsentService.instance.hasAcceptedCurrentTermsSync()) {
+      return true;
+    }
+    final accepted = await TermsAndConditionsDialog.show(context);
+    return accepted == true;
+  }
+
   Future<void> _sendLoginOtp() async {
+    if (!await _ensureConsentAccepted()) return;
+    if (!mounted) return;
+
     final email = _emailController.text.trim();
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1237,7 +1250,10 @@ class _LoginPageState extends State<LoginPage> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                if (!await _ensureConsentAccepted()) return;
+                if (!mounted) return;
+
                 Widget targetPage;
                 switch (_selectedRole) {
                   case UserRole.provider:

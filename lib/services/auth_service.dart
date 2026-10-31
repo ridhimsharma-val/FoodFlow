@@ -11,6 +11,9 @@ class UserProfile {
   final String? phone;
   final String? operatingLocation;
   final bool isVerified;
+  final String? termsAcceptedVersion;
+  final DateTime? termsAcceptedAt;
+  final bool isTermsConsentActive;
 
   const UserProfile({
     required this.id,
@@ -21,6 +24,9 @@ class UserProfile {
     this.phone,
     this.operatingLocation,
     this.isVerified = true,
+    this.termsAcceptedVersion,
+    this.termsAcceptedAt,
+    this.isTermsConsentActive = true,
   });
 
   bool get isProvider => role == 'provider';
@@ -58,6 +64,11 @@ class UserProfile {
       phone: map['phone']?.toString(),
       operatingLocation: map['operating_location']?.toString(),
       isVerified: map['is_verified'] == true,
+      termsAcceptedVersion: map['terms_accepted_version']?.toString(),
+      termsAcceptedAt: map['terms_accepted_at'] != null
+          ? DateTime.tryParse(map['terms_accepted_at'].toString())
+          : null,
+      isTermsConsentActive: map['terms_consent_active'] != false,
     );
   }
 
@@ -71,6 +82,11 @@ class UserProfile {
       'phone': phone,
       'operating_location': operatingLocation,
       'is_verified': isVerified,
+      'terms_consent_active': isTermsConsentActive,
+      if (termsAcceptedVersion != null)
+        'terms_accepted_version': termsAcceptedVersion,
+      if (termsAcceptedAt != null)
+        'terms_accepted_at': termsAcceptedAt!.toIso8601String(),
     };
   }
 }
