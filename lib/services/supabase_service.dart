@@ -557,6 +557,7 @@ class SupabaseService {
     required String authorizedRepresentative,
     String? contactPerson,
     required String operatingLocation,
+    String? fssaiLicenseNumber,
   }) async {
     final repName = authorizedRepresentative.trim().isNotEmpty
         ? authorizedRepresentative.trim()
@@ -584,6 +585,8 @@ class SupabaseService {
           'full_name': repName,
           'organization_name': organizationName.trim(),
           'email': email.trim(),
+          if (fssaiLicenseNumber != null && fssaiLicenseNumber.isNotEmpty)
+            'fssai_license_number': fssaiLicenseNumber.trim(),
           'is_verified': true,
         });
       } catch (_) {
@@ -606,6 +609,8 @@ class SupabaseService {
           'category': category,
           'contact_person': repName,
           'operating_location': operatingLocation.trim(),
+          if (fssaiLicenseNumber != null && fssaiLicenseNumber.isNotEmpty)
+            'fssai_license_number': fssaiLicenseNumber.trim(),
           'verification_method': 'email',
           'is_verified': true,
         });
