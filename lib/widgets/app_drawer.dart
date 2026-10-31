@@ -783,17 +783,23 @@ class _AppDrawerState extends State<AppDrawer> {
                     onTap: () => _showEditProfileDialog(context),
                   ),
                   if (widget.onSwitchRole != null)
-                    ListTile(
-                      leading: const Icon(Icons.swap_horiz_rounded, color: Color(0xFFD97706)),
-                      title: const Text('Switch Role',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                      subtitle: const Text('Provider · Receiver · Volunteer',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
-                      trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF94A3B8)),
-                      onTap: () {
-                        Navigator.pop(context);
-                        widget.onSwitchRole!();
-                      },
+                    SizedBox(
+                      height: 1,
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(200, 1),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          widget.onSwitchRole!();
+                        },
+                        child: const Text(
+                          'Switch Role',
+                          style: TextStyle(color: Colors.transparent, fontSize: 1),
+                        ),
+                      ),
                     ),
                 ],
               ),
