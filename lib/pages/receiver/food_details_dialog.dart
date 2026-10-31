@@ -110,7 +110,7 @@ class _FoodDetailsDialogState extends State<FoodDetailsDialog> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(isExpired ? '⌛' : '🍲', style: const TextStyle(fontSize: 48)),
+                          Text(isExpired ? '⌛' : batch.foodEmoji, style: const TextStyle(fontSize: 48)),
                           const SizedBox(height: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
@@ -373,7 +373,7 @@ class _FoodDetailsDialogState extends State<FoodDetailsDialog> {
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
-                                      'Safe countdown: ${pricing.formattedCountdown}',
+                                      'Safe countdown: ${pricing.formattedCountdown} left ${batch.formatSafeUntilTarget()}',
                                       style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFFB45309)),
                                     ),
                                   ),

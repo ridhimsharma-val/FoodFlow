@@ -183,8 +183,8 @@ class _FoodHistoryPageState extends State<FoodHistoryPage> with SingleTickerProv
                 color: const Color(0xFFFEF3C7),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Center(
-                child: Text('🍱', style: TextStyle(fontSize: 26)),
+              child: Center(
+                child: Text(batch.foodEmoji, style: const TextStyle(fontSize: 26)),
               ),
             ),
             const SizedBox(width: 14),

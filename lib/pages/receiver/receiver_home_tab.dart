@@ -337,7 +337,7 @@ class ReceiverHomeTab extends StatelessWidget {
               color: const Color(0xFFFEF3C7),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Center(child: Text('🍲', style: TextStyle(fontSize: 22))),
+            child: Center(child: Text(rec.batch.foodEmoji, style: const TextStyle(fontSize: 22))),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -489,8 +489,8 @@ class ReceiverHomeTab extends StatelessWidget {
                     color: const Color(0xFFFEF3C7),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Center(
-                    child: Text('🍲', style: TextStyle(fontSize: 22)),
+                  child: Center(
+                    child: Text(batch.foodEmoji, style: const TextStyle(fontSize: 22)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -622,7 +622,7 @@ class ReceiverHomeTab extends StatelessWidget {
                   child: Text(
                     batch.isExpired
                         ? 'Safe window passed'
-                        : '⏳ ${batch.dynamicPricing.formattedCountdown} left · Live pricing',
+                        : '⏳ ${batch.dynamicPricing.formattedCountdown} left ${batch.formatSafeUntilTarget()} · Live pricing',
                     style: TextStyle(
                       fontSize: 11,
                       color: batch.isExpired ? const Color(0xFFDC2626) : const Color(0xFFB45309),

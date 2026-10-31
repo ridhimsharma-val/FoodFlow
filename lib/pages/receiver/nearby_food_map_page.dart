@@ -161,8 +161,8 @@ class _NearbyFoodMapPageState extends State<NearbyFoodMapPage> {
                                     color: const Color(0xFFFEF3C7),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: const Center(
-                                    child: Text('🍲', style: TextStyle(fontSize: 24)),
+                                  child: Center(
+                                    child: Text(_selectedBatch!.foodEmoji, style: const TextStyle(fontSize: 24)),
                                   ),
                                 ),
                                 const SizedBox(width: 12),

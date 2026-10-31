@@ -234,14 +234,19 @@ class DynamicPriceResult {
     return isExpired ? 0.0 : 1.0;
   }
 
-  /// Formatted remaining countdown text with live ticking seconds e.g. "1h 25m 14s" or "45m 10s" or "10s"
+  /// Formatted remaining countdown text with live ticking seconds or multi-day format
   String get formattedCountdown {
     if (isExpired) return 'Expired';
-    final hours = timeRemaining.inHours;
+    final days = timeRemaining.inDays;
+    final hours = timeRemaining.inHours % 24;
     final mins = timeRemaining.inMinutes.remainder(60);
     final secs = timeRemaining.inSeconds.remainder(60);
-    if (hours > 0) {
-      return '${hours}h ${mins}m ${secs}s';
+
+    if (timeRemaining.inHours >= 24) {
+      return '${days}d ${hours}h ${mins}m';
+    }
+    if (timeRemaining.inHours > 0) {
+      return '${timeRemaining.inHours}h ${mins}m ${secs}s';
     }
     if (mins > 0) {
       return '${mins}m ${secs}s';
@@ -249,9 +254,12 @@ class DynamicPriceResult {
     return '${secs}s';
   }
 
-  /// Compact countdown for small badges e.g. "1h 25m"
+  /// Compact countdown for small badges e.g. "1h 25m" or "2d 4h"
   String get compactCountdown {
     if (isExpired) return 'Expired';
+    if (timeRemaining.inHours >= 24) {
+      return '${timeRemaining.inDays}d ${timeRemaining.inHours % 24}h';
+    }
     final hours = timeRemaining.inHours;
     final mins = timeRemaining.inMinutes.remainder(60);
     if (hours > 0) {

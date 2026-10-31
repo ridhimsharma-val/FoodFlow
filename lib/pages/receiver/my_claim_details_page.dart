@@ -109,8 +109,8 @@ class _MyClaimDetailsPageState extends State<MyClaimDetailsPage> {
                               color: const Color(0xFFFEF3C7),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Center(
-                              child: Text('🍲', style: TextStyle(fontSize: 28)),
+                            child: Center(
+                              child: Text(liveBatch.foodEmoji, style: const TextStyle(fontSize: 28)),
                             ),
                           ),
                           const SizedBox(width: 14),

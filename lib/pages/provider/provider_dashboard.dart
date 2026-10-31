@@ -170,7 +170,10 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
       providerName: _currentProviderName,
       category: _currentCategory,
       location: _selectedLocation,
-      onProfileUpdated: () => setState(() {}),
+      onProfileUpdated: () {
+        _loadSavedProviderLocation();
+        if (mounted) setState(() {});
+      },
       onSwitchRole: widget.onSwitchRole,
     );
   }
@@ -262,7 +265,10 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
             drawer: AppDrawer(
               activeRole: 'Food Provider',
               onSwitchRole: widget.onSwitchRole,
-              onProfileUpdated: () => setState(() {}),
+              onProfileUpdated: () {
+        _loadSavedProviderLocation();
+        if (mounted) setState(() {});
+      },
             ),
             body: Row(
               children: [
@@ -281,7 +287,10 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
           drawer: AppDrawer(
             activeRole: 'Food Provider',
             onSwitchRole: widget.onSwitchRole,
-            onProfileUpdated: () => setState(() {}),
+            onProfileUpdated: () {
+        _loadSavedProviderLocation();
+        if (mounted) setState(() {});
+      },
           ),
           body: contentStack,
           bottomNavigationBar: _buildMobileBottomNav(),

@@ -125,7 +125,7 @@ class VolunteerTaskDetailsDialog extends StatelessWidget {
                               border: Border.all(color: const Color(0xFFE2E8F0)),
                             ),
                             child: Text(
-                              'Food type: ${batch.category} • ${batch.dietaryType}',
+                              '${batch.foodEmoji} ${batch.category} • ${batch.dietaryType}',
                               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
                               overflow: TextOverflow.ellipsis,
                             ),

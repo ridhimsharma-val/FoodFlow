@@ -362,15 +362,30 @@ class _VolunteerTasksPageState extends State<VolunteerTasksPage> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(batch.foodEmoji, style: const TextStyle(fontSize: 20)),
+                ),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Text(
-                          batch.title,
-                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
+                        Flexible(
+                          child: Text(
+                            batch.title,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         if (isUrgent) ...[
                           const SizedBox(width: 8),

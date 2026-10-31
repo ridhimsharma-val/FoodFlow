@@ -315,6 +315,7 @@ class _PostFoodPageState extends State<PostFoodPage> {
       packagingType: 'Food-Grade Containers',
       pickupAddress: _locationController.text.trim(),
       location: _selectedLatLng,
+      foodEmoji: _selectedFoodEmoji,
       cookedAt: cookedAt,
       safeUntil: safeUntil,
       basePrice: basePrice,

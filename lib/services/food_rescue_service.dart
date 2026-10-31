@@ -38,6 +38,8 @@ class SurplusBatch {
   final String pickupAddress;
   final String pickupOtp;
   final String deliveryOtp;
+  final String foodEmoji;
+  String get foodIcon => foodEmoji;
 
   // Static pricing inputs (compute-on-read model)
   final double basePrice;
@@ -87,6 +89,7 @@ class SurplusBatch {
     required this.pickupAddress,
     required this.pickupOtp,
     required this.deliveryOtp,
+    this.foodEmoji = '🍲',
     this.basePrice = 50.0,
     this.floorPrice = 10.0,
     this.foodType = 'normal',
@@ -170,6 +173,29 @@ class SurplusBatch {
 
   bool get isExpired => remainingSafeTime == Duration.zero;
 
+  /// Formatted safe until target with day offset (e.g. "(until 2:31 AM)", "(until 2:31 AM, tomorrow)", "(until 2:31 AM, +6d)")
+  String formatSafeUntilTarget([DateTime? fromDate]) {
+    final now = fromDate ?? DateTime.now();
+    final hour = safeUntil.hour;
+    final minute = safeUntil.minute;
+    final h = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    final m = minute.toString().padLeft(2, '0');
+    final ampm = hour >= 12 ? 'PM' : 'AM';
+    final targetTimeStr = '$h:$m $ampm';
+
+    final nowDate = DateTime(now.year, now.month, now.day);
+    final targetDate = DateTime(safeUntil.year, safeUntil.month, safeUntil.day);
+    final daysDiff = targetDate.difference(nowDate).inDays;
+
+    if (daysDiff <= 0) {
+      return '(until $targetTimeStr)';
+    } else if (daysDiff == 1) {
+      return '(until $targetTimeStr, tomorrow)';
+    } else {
+      return '(until $targetTimeStr, +${daysDiff}d)';
+    }
+  }
+
   /// Dynamic Markdown Pricing result calculated on-read (or locked transaction result)
   DynamicPriceResult get dynamicPricing {
     if (lockedUnitPrice != null) {
@@ -241,6 +267,7 @@ class SurplusBatch {
       'pickup_longitude': location.longitude,
       'pickup_otp': pickupOtp,
       'delivery_otp': deliveryOtp,
+      'food_icon': foodEmoji,
       'status': status.name,
       'claimed_by_ngo_name': claimedByNgo,
       if (claimedByNgoId != null && _isValidUuid(claimedByNgoId!)) 'claimed_by_ngo_id': claimedByNgoId,
@@ -340,6 +367,7 @@ class SurplusBatch {
       pickupAddress: json['pickup_address'] as String? ?? '12th Main Road, Indiranagar, Bengaluru',
       pickupOtp: json['pickup_otp'] as String? ?? '4821',
       deliveryOtp: json['delivery_otp'] as String? ?? '7390',
+      foodEmoji: (json['food_icon'] ?? json['food_emoji']) as String? ?? '🍲',
       basePrice: (json['base_price'] as num?)?.toDouble() ?? 50.0,
       floorPrice: (json['floor_price'] as num?)?.toDouble() ?? 10.0,
       foodType: json['food_type'] as String? ?? 'normal',
@@ -638,6 +666,7 @@ class FoodRescueService extends ChangeNotifier {
   }
 
   static bool _hasPricingColumns = true;
+  static bool _hasFoodIconColumn = true;
 
   /// Explicitly refresh batches from Supabase
   Future<void> refreshBatches() async {
@@ -681,13 +710,24 @@ class FoodRescueService extends ChangeNotifier {
   Future<void> _syncBatchUpsert(SurplusBatch batch) async {
     if (!SupabaseService.isInitialized) return;
 
+    Map<String, dynamic> preparePayload(bool includePricing) {
+      final payload = batch.toJson(includePricing: includePricing);
+      if (!_hasFoodIconColumn) {
+        payload.remove('food_icon');
+      }
+      return payload;
+    }
+
     if (_hasPricingColumns) {
       try {
-        await SupabaseService.client.from('surplus_batches').upsert(batch.toJson(includePricing: true));
+        await SupabaseService.client.from('surplus_batches').upsert(preparePayload(true));
         debugPrint('Batch successfully synced to Supabase (full schema): ${batch.id}');
         return;
       } catch (err) {
         final errStr = err.toString();
+        if (errStr.contains('food_icon')) {
+          _hasFoodIconColumn = false;
+        }
         if (errStr.contains('PGRST204') || errStr.contains('base_price') || errStr.contains('column')) {
           debugPrint('Supabase surplus_batches schema lacks pricing columns. Falling back to base columns: $err');
           _hasPricingColumns = false;
@@ -699,9 +739,16 @@ class FoodRescueService extends ChangeNotifier {
     }
 
     try {
-      await SupabaseService.client.from('surplus_batches').upsert(batch.toJson(includePricing: false));
+      await SupabaseService.client.from('surplus_batches').upsert(preparePayload(false));
       debugPrint('Batch successfully synced to Supabase (base schema fallback): ${batch.id}');
     } catch (fallbackErr) {
+      final fallbackErrStr = fallbackErr.toString();
+      if (fallbackErrStr.contains('food_icon')) {
+        _hasFoodIconColumn = false;
+        try {
+          await SupabaseService.client.from('surplus_batches').upsert(preparePayload(false));
+        } catch (_) {}
+      }
       debugPrint('Supabase insert base fallback notice: $fallbackErr');
     }
   }
@@ -735,13 +782,24 @@ class FoodRescueService extends ChangeNotifier {
       }
     }
 
+    Map<String, dynamic> preparePayload(bool includePricing) {
+      final payload = batch.toJson(includePricing: includePricing);
+      if (!_hasFoodIconColumn) {
+        payload.remove('food_icon');
+      }
+      return payload;
+    }
+
     if (_hasPricingColumns) {
       try {
-        await SupabaseService.client.from('surplus_batches').update(batch.toJson(includePricing: true)).eq('id', batch.id);
+        await SupabaseService.client.from('surplus_batches').update(preparePayload(true)).eq('id', batch.id);
         debugPrint('Batch updated in Supabase (full schema): ${batch.id}');
         return;
       } catch (err) {
         final errStr = err.toString();
+        if (errStr.contains('food_icon')) {
+          _hasFoodIconColumn = false;
+        }
         if (errStr.contains('PGRST204') || errStr.contains('base_price') || errStr.contains('column')) {
           _hasPricingColumns = false;
         } else {
@@ -752,9 +810,16 @@ class FoodRescueService extends ChangeNotifier {
     }
 
     try {
-      await SupabaseService.client.from('surplus_batches').update(batch.toJson(includePricing: false)).eq('id', batch.id);
+      await SupabaseService.client.from('surplus_batches').update(preparePayload(false)).eq('id', batch.id);
       debugPrint('Batch updated in Supabase (base schema fallback): ${batch.id}');
     } catch (fallbackErr) {
+      final fallbackErrStr = fallbackErr.toString();
+      if (fallbackErrStr.contains('food_icon')) {
+        _hasFoodIconColumn = false;
+        try {
+          await SupabaseService.client.from('surplus_batches').update(preparePayload(false)).eq('id', batch.id);
+        } catch (_) {}
+      }
       debugPrint('Supabase update base fallback notice: $fallbackErr');
     }
   }
@@ -771,6 +836,8 @@ class FoodRescueService extends ChangeNotifier {
     required String packagingType,
     required String pickupAddress,
     required LatLng location,
+    String foodEmoji = '🍲',
+    String? foodIcon,
     String? providerId,
     int safeHours = 4,
     DateTime? cookedAt,
@@ -791,6 +858,8 @@ class FoodRescueService extends ChangeNotifier {
         ? providerId
         : SupabaseService.currentUser?.id;
 
+    final effectiveFoodEmoji = (foodIcon != null && foodIcon.isNotEmpty) ? foodIcon : foodEmoji;
+
     final batch = SurplusBatch(
       id: 'BATCH-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
       providerId: effectiveProviderId,
@@ -808,6 +877,7 @@ class FoodRescueService extends ChangeNotifier {
       pickupAddress: pickupAddress,
       pickupOtp: randomPickupOtp,
       deliveryOtp: randomDeliveryOtp,
+      foodEmoji: effectiveFoodEmoji,
       basePrice: basePrice,
       floorPrice: floorPrice,
       foodType: foodType,

@@ -286,8 +286,8 @@ class _LiveClaimPageState extends State<LiveClaimPage> {
                               color: const Color(0xFFFEF3C7),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Center(
-                              child: Text('🍲', style: TextStyle(fontSize: 30)),
+                            child: Center(
+                              child: Text(liveBatch.foodEmoji, style: const TextStyle(fontSize: 30)),
                             ),
                           ),
                           const SizedBox(width: 16),

@@ -423,5 +423,21 @@ void main() {
       expect(res.formattedCurrentPrice, isNot(startsWith('₹')));
       expect(res.currencyCurrentPrice, startsWith('₹'));
     });
+
+    test('Live formatted countdown displays multi-day breakdown for shelf-life >= 24h', () {
+      final now = DateTime(2026, 9, 10, 10, 0, 0);
+      final safeUntil = now.add(const Duration(days: 6, hours: 18, minutes: 25, seconds: 40));
+
+      final res = DynamicPricingService.calculateDynamicPrice(
+        basePrice: 50.0,
+        floorPrice: 10.0,
+        cookedAt: now.subtract(const Duration(hours: 1)),
+        safeUntil: safeUntil,
+        currentTime: now,
+      );
+
+      expect(res.formattedCountdown, equals('6d 18h 25m'));
+      expect(res.compactCountdown, equals('6d 18h'));
+    });
   });
 }

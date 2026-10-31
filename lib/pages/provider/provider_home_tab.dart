@@ -622,8 +622,8 @@ class ProviderHomeTab extends StatelessWidget {
                     color: const Color(0xFFFEF3C7),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Center(
-                    child: Text('🍲', style: TextStyle(fontSize: 22)),
+                  child: Center(
+                    child: Text(batch.foodEmoji, style: const TextStyle(fontSize: 22)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -741,7 +741,7 @@ class ProviderHomeTab extends StatelessWidget {
                   child: Text(
                     batch.isExpired
                         ? 'Expired at ${_formatTime(batch.safeUntil)}'
-                        : '⏳ ${batch.dynamicPricing.formattedCountdown} left (until ${_formatTime(batch.safeUntil)})',
+                        : '⏳ ${batch.dynamicPricing.formattedCountdown} left ${batch.formatSafeUntilTarget()}',
                     style: TextStyle(
                       fontSize: 11.5,
                       color: batch.isExpired ? const Color(0xFFEF4444) : const Color(0xFFD97706),
@@ -1021,7 +1021,7 @@ class ProviderHomeTab extends StatelessWidget {
                     color: const Color(0xFFFEF3C7),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Center(child: Text('🍲', style: TextStyle(fontSize: 24))),
+                  child: Center(child: Text(batch.foodEmoji, style: const TextStyle(fontSize: 24))),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -1048,7 +1048,7 @@ class ProviderHomeTab extends StatelessWidget {
             const SizedBox(height: 14),
             _buildDialogRow('Quantity', '${batch.quantityPortions} portions'),
             _buildDialogRow('Cooked At', _formatTime(batch.cookedAt)),
-            _buildDialogRow('Safe Until', _formatTime(batch.safeUntil)),
+            _buildDialogRow('Safe Until', '${_formatTime(batch.safeUntil)} ${batch.formatSafeUntilTarget()}'),
             _buildDialogRow('Storage Temp', '${batch.temperatureCelsius}°C'),
             _buildDialogRow('Packaging', batch.packagingType),
             _buildDialogRow('Pickup Address', batch.pickupAddress),

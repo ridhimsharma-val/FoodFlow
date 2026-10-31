@@ -279,8 +279,8 @@ class _MyClaimsPageState extends State<MyClaimsPage> with SingleTickerProviderSt
                 color: const Color(0xFFFEF3C7),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Center(
-                child: Text('🍲', style: TextStyle(fontSize: 24)),
+              child: Center(
+                child: Text(batch.foodEmoji, style: const TextStyle(fontSize: 24)),
               ),
             ),
             const SizedBox(width: 14),

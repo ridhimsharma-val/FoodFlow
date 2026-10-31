@@ -160,6 +160,42 @@ void main() {
       // Cooked and safe timestamps must serialize with UTC 'Z' suffix
       expect((jsonWithUuid['cooked_at'] as String).endsWith('Z'), isTrue);
       expect((jsonWithUuid['safe_until'] as String).endsWith('Z'), isTrue);
+      expect(jsonWithUuid['food_icon'], equals('🍲'));
+    });
+
+    test('SurplusBatch persists foodEmoji / foodIcon and deserializes with fallback', () {
+      final batch = service.listNewBatch(
+        providerName: 'Custom Icon Kitchen',
+        providerCategory: 'Bakery',
+        title: 'Fresh Pav & Breads',
+        category: 'Bakery & Bread',
+        quantityPortions: 20,
+        dietaryType: 'Pure Veg',
+        temperatureCelsius: 24.0,
+        packagingType: 'Paper Bags',
+        pickupAddress: 'Sector 62, Noida',
+        location: const LatLng(12.9784, 77.6408),
+        foodEmoji: '🍞',
+      );
+
+      expect(batch.foodEmoji, equals('🍞'));
+      expect(batch.foodIcon, equals('🍞'));
+
+      final json = batch.toJson();
+      expect(json['food_icon'], equals('🍞'));
+
+      // fromJson reads 'food_icon'
+      final parsed = SurplusBatch.fromJson(json);
+      expect(parsed.foodEmoji, equals('🍞'));
+
+      // fromJson fallback to '🍲' when key is missing
+      final parsedFallback = SurplusBatch.fromJson({
+        'id': 'BATCH-FALLBACK-01',
+        'provider_name': 'Fallback Kitchen',
+        'title': 'Dal Tadka',
+      });
+      expect(parsedFallback.foodEmoji, equals('🍲'));
+      expect(parsedFallback.foodIcon, equals('🍲'));
     });
 
     test('SurplusBatch remainingSafeTime accurately reflects safeHours without timezone shift', () {
