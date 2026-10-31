@@ -44,7 +44,10 @@ class _PostFoodPageState extends State<PostFoodPage> {
   final String _selectedQualityTier = 'tier1';
   final bool _clearKitchen = false;
   TimeOfDay _preparedAt = TimeOfDay.now();
-  TimeOfDay _bestBefore = TimeOfDay(hour: (TimeOfDay.now().hour + 4) % 24, minute: TimeOfDay.now().minute);
+  late TimeOfDay _bestBefore;
+  late TimeOfDay _pickupStart;
+  late TimeOfDay _pickupEnd;
+  Duration _shelfLifeDuration = const Duration(hours: 4);
   String _selectedFoodEmoji = '🍲';
   bool _isPosting = false;
 
@@ -56,13 +59,15 @@ class _PostFoodPageState extends State<PostFoodPage> {
     'Raw Grains & Rations',
   ];
 
-  final List<Map<String, String>> _foodVisuals = [
-    {'emoji': '🍲', 'label': 'Rice & Dal'},
-    {'emoji': '🍛', 'label': 'Curry & Gravy'},
-    {'emoji': '🫓', 'label': 'Rotis & Breads'},
-    {'emoji': '🍱', 'label': 'Thali Boxes'},
-    {'emoji': '🥪', 'label': 'Snacks / Sandwiches'},
-    {'emoji': '🍞', 'label': 'Bakery'},
+  final List<String> _foodVisuals = [
+    '🍲', // Dal & Khichdi
+    '🍛', // Rice & Biryani
+    '🫓', // Roti / Chapati
+    '🍱', // Thali / Meal Box
+    '🥘', // Sabzi & Curry
+    '🥪', // Snacks / Idli / Samosa
+    '🍞', // Bakery
+    '🌾', // Dry Ration / Grains
   ];
 
   late LatLng _selectedLatLng;
@@ -73,12 +78,53 @@ class _PostFoodPageState extends State<PostFoodPage> {
     super.initState();
     final now = TimeOfDay.now();
     _preparedAt = now;
-    _bestBefore = TimeOfDay(hour: (now.hour + 4) % 24, minute: now.minute);
-    _pickupTimeController.text = '${_formatTimeOfDay(now)} – ${_formatTimeOfDay(TimeOfDay(hour: (now.hour + 2) % 24, minute: now.minute))}';
+    _pickupStart = now;
+    _pickupEnd = TimeOfDay(hour: (now.hour + 2) % 24, minute: now.minute);
+    _pickupTimeController.text = '${_formatTimeOfDay(_pickupStart)} – ${_formatTimeOfDay(_pickupEnd)}';
+    _updateShelfLifeForCategory(_selectedCategory);
     _selectedLatLng = widget.initialLatLng;
     _locationController.text = widget.initialLocation.isNotEmpty
         ? widget.initialLocation
         : 'ABC Restaurant Kitchen, Greater Noida';
+  }
+
+  Duration _getDefaultShelfLifeForCategory(String category) {
+    switch (category) {
+      case 'Cooked Meal':
+        return const Duration(hours: 4);
+      case 'Bakery & Bread':
+        return const Duration(hours: 24); // 24–48 hours (1 day)
+      case 'Packaged Goods':
+        return const Duration(days: 7); // 7 days
+      case 'Fresh Produce':
+        return const Duration(hours: 48); // 48 hours
+      case 'Raw Grains & Rations':
+        return const Duration(days: 30); // 30 days
+      default:
+        return const Duration(hours: 4);
+    }
+  }
+
+  void _updateShelfLifeForCategory(String category) {
+    _shelfLifeDuration = _getDefaultShelfLifeForCategory(category);
+    final now = DateTime.now();
+    final prepDateTime = DateTime(now.year, now.month, now.day, _preparedAt.hour, _preparedAt.minute);
+    final target = prepDateTime.add(_shelfLifeDuration);
+    _bestBefore = TimeOfDay(hour: target.hour, minute: target.minute);
+  }
+
+  String _getShelfLifeBadgeText() {
+    if (_shelfLifeDuration.inDays >= 30) {
+      return '30 days';
+    } else if (_shelfLifeDuration.inDays >= 7) {
+      return '7 days';
+    } else if (_shelfLifeDuration.inHours >= 48) {
+      return '48 hrs';
+    } else if (_shelfLifeDuration.inHours >= 24) {
+      return '24 hrs';
+    } else {
+      return '4 hrs';
+    }
   }
 
   Future<void> _detectMyLocation() async {
@@ -147,6 +193,7 @@ class _PostFoodPageState extends State<PostFoodPage> {
     final picked = await showTimePicker(
       context: context,
       initialTime: initial,
+      helpText: isPreparedAt ? 'Select Preparation Time' : 'Select Expiration Window Time',
       builder: (ctx, child) {
         return Theme(
           data: Theme.of(ctx).copyWith(
@@ -162,15 +209,63 @@ class _PostFoodPageState extends State<PostFoodPage> {
       },
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() {
         if (isPreparedAt) {
           _preparedAt = picked;
+          _updateShelfLifeForCategory(_selectedCategory);
         } else {
           _bestBefore = picked;
         }
       });
     }
+  }
+
+  Future<void> _pickPickupWindow() async {
+    final start = await showTimePicker(
+      context: context,
+      initialTime: _pickupStart,
+      helpText: 'Select Pickup Window Start Time',
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFFFFC107),
+            onPrimary: Color(0xFF1E293B),
+            surface: Colors.white,
+            onSurface: Color(0xFF1E293B),
+          ),
+        ),
+        child: child!,
+      ),
+    );
+
+    if (start == null || !mounted) return;
+
+    final initialEnd = TimeOfDay(hour: (start.hour + 2) % 24, minute: start.minute);
+    final end = await showTimePicker(
+      context: context,
+      initialTime: initialEnd,
+      helpText: 'Select Pickup Window End Time',
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFFFFC107),
+            onPrimary: Color(0xFF1E293B),
+            surface: Colors.white,
+            onSurface: Color(0xFF1E293B),
+          ),
+        ),
+        child: child!,
+      ),
+    );
+
+    if (end == null || !mounted) return;
+
+    setState(() {
+      _pickupStart = start;
+      _pickupEnd = end;
+      _pickupTimeController.text = '${_formatTimeOfDay(_pickupStart)} – ${_formatTimeOfDay(_pickupEnd)}';
+    });
   }
 
   Future<void> _confirmAndPostFood() async {
@@ -194,13 +289,19 @@ class _PostFoodPageState extends State<PostFoodPage> {
     if (cookedAt.isAfter(now)) {
       cookedAt = cookedAt.subtract(const Duration(days: 1));
     }
-    DateTime safeUntil = DateTime(cookedAt.year, cookedAt.month, cookedAt.day, _bestBefore.hour, _bestBefore.minute);
+    DateTime safeUntil = DateTime(
+      cookedAt.year,
+      cookedAt.month,
+      cookedAt.day + _shelfLifeDuration.inDays,
+      _bestBefore.hour,
+      _bestBefore.minute,
+    );
     if (safeUntil.isBefore(cookedAt)) {
       safeUntil = safeUntil.add(const Duration(days: 1));
     }
     // Safety guarantee: Ensure newly posted batches have an active safe window
     if (safeUntil.isBefore(now)) {
-      safeUntil = now.add(const Duration(hours: 4));
+      safeUntil = now.add(_shelfLifeDuration);
     }
 
     final batch = FoodRescueService.instance.listNewBatch(
@@ -321,26 +422,23 @@ class _PostFoodPageState extends State<PostFoodPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Food Visual / Emoji Selector
-        const Text(
-          'Food Image & Presentation',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
-        ),
-        const SizedBox(height: 8),
+        // 1. Minimal Icon Selector ("Food Icon")
+        _buildLabel('Food Icon'),
         SizedBox(
-          height: 64,
+          height: 52,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _foodVisuals.length,
             separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (ctx, idx) {
-              final item = _foodVisuals[idx];
-              final isSelected = _selectedFoodEmoji == item['emoji'];
+              final emoji = _foodVisuals[idx];
+              final isSelected = _selectedFoodEmoji == emoji;
               return InkWell(
-                onTap: () => setState(() => _selectedFoodEmoji = item['emoji']!),
+                onTap: () => setState(() => _selectedFoodEmoji = emoji),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
                     color: isSelected ? const Color(0xFFFEF3C7) : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(12),
@@ -349,19 +447,11 @@ class _PostFoodPageState extends State<PostFoodPage> {
                       width: isSelected ? 2 : 1,
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Text(item['emoji']!, style: const TextStyle(fontSize: 24)),
-                      const SizedBox(width: 8),
-                      Text(
-                        item['label']!,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: const Color(0xFF1E293B),
-                        ),
-                      ),
-                    ],
+                  child: Center(
+                    child: Text(
+                      emoji,
+                      style: const TextStyle(fontSize: 24),
+                    ),
                   ),
                 ),
               );
@@ -371,7 +461,19 @@ class _PostFoodPageState extends State<PostFoodPage> {
 
         const SizedBox(height: 20),
 
-        // Food Name
+        // 2. Food Type (Veg / Non-Veg above Food Name)
+        _buildLabel('Food Type'),
+        Row(
+          children: [
+            _buildTypeChip('Pure Veg', Icons.eco_rounded, const Color(0xFF10B981)),
+            const SizedBox(width: 12),
+            _buildTypeChip('Non-Veg', Icons.set_meal_rounded, const Color(0xFFEF4444)),
+          ],
+        ),
+
+        const SizedBox(height: 18),
+
+        // 3. Food Name
         _buildLabel('Food Name'),
         TextField(
           controller: _foodNameController,
@@ -380,7 +482,7 @@ class _PostFoodPageState extends State<PostFoodPage> {
 
         const SizedBox(height: 18),
 
-        // Category & Servings Row
+        // 4. Category & Servings Row
         Row(
           children: [
             Expanded(
@@ -402,7 +504,12 @@ class _PostFoodPageState extends State<PostFoodPage> {
                         icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B)),
                         items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 14)))).toList(),
                         onChanged: (val) {
-                          if (val != null) setState(() => _selectedCategory = val);
+                          if (val != null) {
+                            setState(() {
+                              _selectedCategory = val;
+                              _updateShelfLifeForCategory(val);
+                            });
+                          }
                         },
                       ),
                     ),
@@ -429,19 +536,7 @@ class _PostFoodPageState extends State<PostFoodPage> {
 
         const SizedBox(height: 18),
 
-        // Veg / Non-Veg Selector
-        _buildLabel('Food Type'),
-        Row(
-          children: [
-            _buildTypeChip('Pure Veg', Icons.eco_rounded, const Color(0xFF10B981)),
-            const SizedBox(width: 12),
-            _buildTypeChip('Non-Veg', Icons.set_meal_rounded, const Color(0xFFEF4444)),
-          ],
-        ),
-
-        const SizedBox(height: 18),
-
-        // Prepared At & Best Consumed Before Row
+        // 5. Prepared At & Best Consumed Before Row
         Row(
           children: [
             Expanded(
@@ -494,9 +589,22 @@ class _PostFoodPageState extends State<PostFoodPage> {
                         children: [
                           const Icon(Icons.timer_rounded, size: 18, color: Color(0xFFD97706)),
                           const SizedBox(width: 8),
-                          Text(
-                            _formatTimeOfDay(_bestBefore),
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+                          Expanded(
+                            child: Text(
+                              _formatTimeOfDay(_bestBefore),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF3C7),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              _getShelfLifeBadgeText(),
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFB45309)),
+                            ),
                           ),
                         ],
                       ),
@@ -625,11 +733,19 @@ class _PostFoodPageState extends State<PostFoodPage> {
         const SizedBox(height: 18),
 
         _buildLabel('Pickup Time Window'),
-        TextField(
-          controller: _pickupTimeController,
-          decoration: _inputDecoration(
-            hint: 'e.g. 7:00 PM – 8:00 PM',
-            prefixIcon: const Icon(Icons.access_time_rounded, color: Color(0xFF64748B), size: 20),
+        InkWell(
+          onTap: _pickPickupWindow,
+          borderRadius: BorderRadius.circular(10),
+          child: IgnorePointer(
+            child: TextField(
+              controller: _pickupTimeController,
+              readOnly: true,
+              decoration: _inputDecoration(
+                hint: 'e.g. 7:00 PM – 9:00 PM',
+                prefixIcon: const Icon(Icons.access_time_rounded, color: Color(0xFF64748B), size: 20),
+                suffixIcon: const Icon(Icons.schedule_rounded, color: Color(0xFF94A3B8), size: 20),
+              ),
+            ),
           ),
         ),
 
@@ -722,7 +838,7 @@ class _PostFoodPageState extends State<PostFoodPage> {
 
               _buildReviewRow('Prepared At', _formatTimeOfDay(_preparedAt)),
               const SizedBox(height: 10),
-              _buildReviewRow('Best Before', _formatTimeOfDay(_bestBefore)),
+              _buildReviewRow('Best Before', '${_formatTimeOfDay(_bestBefore)} (${_getShelfLifeBadgeText()})'),
               const SizedBox(height: 10),
               _buildReviewRow('Base Price', '₹${_basePriceController.text.trim()} / portion'),
               const SizedBox(height: 10),
@@ -914,7 +1030,13 @@ class _PostFoodPageState extends State<PostFoodPage> {
     // Simulate preview at fresh listing (now)
     final now = DateTime.now();
     final cookedAt = DateTime(now.year, now.month, now.day, _preparedAt.hour, _preparedAt.minute);
-    DateTime safeUntil = DateTime(now.year, now.month, now.day, _bestBefore.hour, _bestBefore.minute);
+    DateTime safeUntil = DateTime(
+      now.year,
+      now.month,
+      now.day + _shelfLifeDuration.inDays,
+      _bestBefore.hour,
+      _bestBefore.minute,
+    );
     if (safeUntil.isBefore(cookedAt)) {
       safeUntil = safeUntil.add(const Duration(days: 1));
     }
@@ -1128,7 +1250,7 @@ class _PostFoodPageState extends State<PostFoodPage> {
     );
   }
 
-  Widget _buildTypeChip(String label, IconData icon, Color color) {
+  Widget _buildTypeChip(String label, IconData defaultIcon, Color color) {
     final isSelected = _selectedDietary == label;
     return InkWell(
       onTap: () => setState(() => _selectedDietary = label),
@@ -1145,7 +1267,11 @@ class _PostFoodPageState extends State<PostFoodPage> {
         ),
         child: Row(
           children: [
-            Icon(icon, color: isSelected ? color : const Color(0xFF94A3B8), size: 16),
+            Icon(
+              isSelected ? Icons.check_circle_rounded : defaultIcon,
+              color: isSelected ? color : const Color(0xFF94A3B8),
+              size: 16,
+            ),
             const SizedBox(width: 8),
             Text(
               label,

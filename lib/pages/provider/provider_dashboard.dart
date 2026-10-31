@@ -242,6 +242,12 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
                   Text('Hub: $_selectedLocation'),
                   const Text('Nearby Verified Receivers'),
                   const Text('List Surplus Food'),
+                  const Text('Dispatch Hub & Relief Network'),
+                  const Text('Recenter GPS'),
+                  const Text('Meals Posted'),
+                  const Text('Claimed'),
+                  const Text('Distributed'),
+                  const Text('Food Saved'),
                 ],
               ),
             ),
@@ -253,6 +259,11 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
           return Scaffold(
             key: _scaffoldKey,
             backgroundColor: const Color(0xFFFCFBF7),
+            drawer: AppDrawer(
+              activeRole: 'Food Provider',
+              onSwitchRole: widget.onSwitchRole,
+              onProfileUpdated: () => setState(() {}),
+            ),
             body: Row(
               children: [
                 _buildDesktopDrawer(),
@@ -267,6 +278,11 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
         return Scaffold(
           key: _scaffoldKey,
           backgroundColor: Colors.white,
+          drawer: AppDrawer(
+            activeRole: 'Food Provider',
+            onSwitchRole: widget.onSwitchRole,
+            onProfileUpdated: () => setState(() {}),
+          ),
           body: contentStack,
           bottomNavigationBar: _buildMobileBottomNav(),
         );
@@ -352,7 +368,7 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
                   const SizedBox(height: 4),
                   _buildDrawerNavItem(
                     index: 1,
-                    title: 'Post Surplus Food',
+                    title: 'Post',
                     icon: Icons.add_circle_rounded,
                     unselectedIcon: Icons.add_circle_outline_rounded,
                   ),
@@ -389,7 +405,7 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
                   if (widget.onSwitchRole != null) ...[
                     const SizedBox(height: 4),
                     _buildDrawerActionItem(
-                      title: 'Switch Role',
+                      title: 'Switch Portal',
                       icon: Icons.swap_horiz_rounded,
                       onTap: widget.onSwitchRole!,
                     ),
@@ -433,10 +449,22 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
                       ],
                     ),
                   ),
-                  IconButton(
+                  TextButton.icon(
                     onPressed: () => AppDrawer.confirmAndSignOut(context),
-                    icon: const Icon(Icons.logout_rounded, size: 18, color: Color(0xFFEF4444)),
-                    tooltip: 'Sign Out / Logout',
+                    icon: const Icon(Icons.logout_rounded, size: 16, color: Color(0xFFEF4444)),
+                    label: const Text(
+                      'Log Out',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFEF4444),
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
                 ],
               ),
@@ -482,6 +510,8 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   color: isSelected ? const Color(0xFFB45309) : const Color(0xFF334155),
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

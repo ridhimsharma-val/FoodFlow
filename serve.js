@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 8080;
+const PORT = process.env.PORT || process.argv[2] || 8080;
 const WEB_DIR = path.join(__dirname, 'build', 'web');
 
 const MIME_TYPES = {

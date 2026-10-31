@@ -125,52 +125,68 @@ class ProviderHomeTab extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left: Food Flow logo placeholder
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFC107),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFFC107).withValues(alpha: 0.35),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.restaurant_rounded, color: Colors.black87, size: 22),
-              ),
-              const SizedBox(width: 12),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Food Flow',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF1E293B),
-                      letterSpacing: -0.4,
-                    ),
+          // Left: Food Flow logo placeholder & Menu button
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (onOpenDrawer != null) ...[
+                  IconButton(
+                    icon: const Icon(Icons.menu_rounded, color: Color(0xFF1E293B)),
+                    onPressed: onOpenDrawer,
+                    tooltip: 'Menu',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                   ),
-                  Text(
-                    'SURPLUS RESCUE PLATFORM',
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFD97706),
-                      letterSpacing: 0.8,
-                    ),
-                  ),
+                  const SizedBox(width: 4),
                 ],
-              ),
-            ],
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFC107),
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFFC107).withValues(alpha: 0.35),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.restaurant_rounded, color: Colors.black87, size: 20),
+                ),
+                const SizedBox(width: 8),
+                const Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Food Flow',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF1E293B),
+                          letterSpacing: -0.4,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'SURPLUS RESCUE PLATFORM',
+                        style: TextStyle(
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFD97706),
+                          letterSpacing: 0.6,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
 
           // Right: Exactly Notification icon + Profile avatar
@@ -499,7 +515,7 @@ class ProviderHomeTab extends StatelessWidget {
             onPressed: onOpenPostTab,
             icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
             label: const Text(
-              'Post Surplus Food',
+              'List First Meal',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
             ),
             style: ElevatedButton.styleFrom(
